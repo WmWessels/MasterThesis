@@ -1,5 +1,6 @@
 import random
 import openml
+import pandas as pd
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import log_loss, accuracy_score
@@ -7,6 +8,7 @@ from sklearn.metrics import log_loss, accuracy_score
 from gama import GamaClassifier
 from gama.gama import Gama
 
+random.seed(0)
 
 
 class AutomlExecutor:
@@ -32,20 +34,20 @@ class AutomlExecutor:
 
 
 def main():
-    datasets = openml.datasets.list_datasets()
-    sample_count = 50
-    dataset_indexes = list(datasets.keys())[50:100]
-    # dataset_indexes = random.choices(list(datasets.keys()), k = sample_count)
+    good_indexes = pd.read_csv("../data/good_indexes.csv", index_col = 0).iloc[:, 0]
+    # sample_count = 50
+    # dataset_indexes = random.sample(good_indexes, sample_count)
     max_total_time = 150
     store = 'logs'
 
-    for dataset_index in dataset_indexes:
+    for dataset_index in good_indexes:
         gamaclassifier = GamaClassifier(max_total_time = max_total_time, store = store, output_directory = f"../logs/gama_{dataset_index}")
         automl_instance = AutomlExecutor(gamaclassifier)
         try:
             automl_instance.run_automl(dataset_index)
         except:
             continue
+
 
 
 if __name__== "__main__":
