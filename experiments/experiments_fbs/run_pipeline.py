@@ -165,7 +165,7 @@ def main() -> None:
     indexes = pd.read_csv("../data/good_indexes.csv", index_col = 0).iloc[:, 0]
     pipeline_runner = PipelineExecutor()
     batch_dataframe = pipeline_runner.evaluate_batch(indexes, candidate_pipelines)    
-    batch_dataframe.to_csv(f"{data_directory}/batch_results.csv")
+    batch_dataframe.to_csv(f"{data_directory}/batch_results_full.csv")
 
 if __name__=="__main__":
     main()
