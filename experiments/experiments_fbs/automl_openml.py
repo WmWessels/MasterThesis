@@ -35,8 +35,6 @@ class AutomlExecutor:
 
 def main():
     good_indexes = pd.read_csv("../data/good_indexes.csv", index_col = 0).iloc[:, 0]
-    # sample_count = 50
-    # dataset_indexes = random.sample(good_indexes, sample_count)
     max_total_time = 150
     store = 'logs'
 
@@ -47,8 +45,6 @@ def main():
             automl_instance.run_automl(dataset_index)
         except:
             continue
-
-
 
 if __name__== "__main__":
     main()
