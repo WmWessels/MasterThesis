@@ -6,7 +6,9 @@ import pandas as pd
 import random
 import multiprocessing  
 import functools
+import time
 from joblib import Parallel, delayed
+from utility import batch
 
 from sklearn.base import TransformerMixin
 from sklearn.pipeline import Pipeline
@@ -153,7 +155,7 @@ class PipelineExecutor:
             evaluations.append(list(res))  
             print(res)
             
-        return pd.DataFrame(evaluations)
+        return pd.DataFrame(index = indexes, data = evaluations, columns = [str(pipe) for pipe in pipelines])
 
 
 def main() -> None:
@@ -164,8 +166,14 @@ def main() -> None:
     pipelines_df.to_csv(f"{data_directory}/pipelines.csv")
     indexes = pd.read_csv("../data/good_indexes.csv", index_col = 0).iloc[:, 0]
     pipeline_runner = PipelineExecutor()
-    batch_dataframe = pipeline_runner.evaluate_batch(indexes, candidate_pipelines)    
-    batch_dataframe.to_csv(f"{data_directory}/batch_results_full.csv")
+    counter = 0
+    starting_time = time.time()
+    for index_batch in batch(indexes, 50):
+        counter += 1
+        batch_dataframe = pipeline_runner.evaluate_batch(index_batch, candidate_pipelines)    
+        batch_dataframe.to_csv(f"{data_directory}/batch_results/batch_{counter}.csv")
+    ending_time = time.time()
+    print(f"Evaluated {len(candidate_pipelines)} pipelines on {len(indexes)} data sets, This took {ending_time - starting_time}")
 
 if __name__=="__main__":
     main()
