@@ -1,6 +1,5 @@
 from typing import List, Iterator, Tuple, Optional
 import openml
-import numpy as np
 import pandas as pd
 
 import random
@@ -9,6 +8,8 @@ import functools
 import time
 from joblib import Parallel, delayed
 from utility import batch
+
+from pebble import concurrent
 
 from sklearn.base import TransformerMixin
 from sklearn.pipeline import Pipeline
@@ -52,10 +53,15 @@ def with_timeout(timeout):
         def inner(*args, **kwargs):
             pool = multiprocessing.pool.ThreadPool(1)
             async_result = pool.apply_async(decorated, args, kwargs)
-            try:
+            try: 
                 return async_result.get(timeout)
             except multiprocessing.TimeoutError:
-                return 0
+                return 0      
+            finally:
+                pool.close()        
+
+            # except multiprocessing.TimeoutError:
+                # return 0
         return inner
     return decorator
 
@@ -95,7 +101,6 @@ class PipelineExecutor:
         x_enc = encoding_pipeline.fit_transform(x, y=None)  # Is this dangerous?
         return x_enc, encoding_pipeline
 
-    @with_timeout(15)
     def evaluate_pipeline(self, pipeline: Pipeline, X: pd.DataFrame, y: pd.Series) -> int:
         """
         Evaluates a sklearn pipeline
@@ -105,18 +110,18 @@ class PipelineExecutor:
         pipeline: sklearn Pipeline object
         X: Pandas dataframe with the feature matrix
         y: labels
-        return_dict: Multiprocessing manager dictionary
         -------
         Returns
         Accuracy of the pipeline on the given data set
         """
-        
+
         try:
             X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=0)
             pipeline.fit(X_train, y_train)
             label_predictions = pipeline.predict(X_test)
             accuracy = accuracy_score(y_test, label_predictions)
-        except:
+        except Exception as e:
+            print(e)
             accuracy = 0
         
         
@@ -138,20 +143,15 @@ class PipelineExecutor:
         for ind in indexes:
             #get dataset from openml
             dataset = openml.datasets.get_dataset(ind)
-            X, y, _, _ = dataset.get_data(dataset_format="dataframe", target = dataset.default_target_attribute)
+            try:
+                X, y, _, _ = dataset.get_data(dataset_format="dataframe", target = dataset.default_target_attribute)
+            except: 
+                evaluations.append([None for i in range(len(pipelines))])
+                continue
             
             x_enc, _ = self.basic_encoding(X, is_classification=True)
-            # manager = multiprocessing.Manager()
-            # return_dict = manager.dict()
-            # jobs = []
-            # for pipeline in pipelines:
-                # p = multiprocessing.Process(target = self.evaluate_pipeline, args = (pipeline, x_enc, y, return_dict))
-                # jobs.append(p)
-                # p.start()
-            # for proc in jobs:
-                # proc.join(5)
                 
-            res = Parallel(n_jobs=-1)(delayed(self.evaluate_pipeline)(pipeline, x_enc, y) for pipeline in pipelines)
+            res = Parallel(n_jobs=3)(delayed(self.evaluate_pipeline)(pipeline, x_enc, y) for pipeline in pipelines)
             evaluations.append(list(res))  
             print(res)
             
@@ -162,16 +162,15 @@ def main() -> None:
     random.seed(0)
     data_directory = "../data"
     candidate_pipelines = random.sample(pd.read_csv(f"{data_directory}/candidate_pipelines.csv", skiprows = 1, index_col=0).iloc[:, 0].apply(lambda x: eval(x)).to_list(), 150)
-    pipelines_df = pd.DataFrame(candidate_pipelines)
-    pipelines_df.to_csv(f"{data_directory}/pipelines.csv")
     indexes = pd.read_csv("../data/good_indexes.csv", index_col = 0).iloc[:, 0]
     pipeline_runner = PipelineExecutor()
     counter = 0
     starting_time = time.time()
-    for index_batch in batch(indexes, 50):
+    for index_batch in batch(indexes, 20):
         counter += 1
-        batch_dataframe = pipeline_runner.evaluate_batch(index_batch, candidate_pipelines)    
-        batch_dataframe.to_csv(f"{data_directory}/batch_results/batch_{counter}.csv")
+        if counter > 32:
+            batch_dataframe = pipeline_runner.evaluate_batch(index_batch, candidate_pipelines)    
+            batch_dataframe.to_csv(f"{data_directory}/batch_results/batch_{counter}.csv")
     ending_time = time.time()
     print(f"Evaluated {len(candidate_pipelines)} pipelines on {len(indexes)} data sets, This took {ending_time - starting_time}")
 
