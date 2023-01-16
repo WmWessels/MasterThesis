@@ -1,7 +1,5 @@
 from typing import Optional, List
 
-import pickle
-import glob
 import pandas as pd
 from sklearn.pipeline import Pipeline
 
@@ -18,19 +16,8 @@ class PortFolioBuilder:
             average_cluster_performances = df_filtered.mean(axis = 0)
             best_performing = average_cluster_performances.sort_values(ascending=False)[:self.size]
             best_performing_pipelines = pd.DataFrame(best_performing)
-        
+        else:
+            raise ValueError(f"""Portfolio building strategy {self.strategy} not recognized, 
+                               please try another strategy""")
+
         return best_performing_pipelines
-    
-def main() -> None:
-    data_directory = "../data"
-    csv_files = glob.glob(f"{data_directory}/*.{'csv'}")
-    df = pd.concat([pd.read(f) for f in csv_files])
-    with open(f"{data_directory}/clustering_models/cluster_kmeans_8.pkl", "rb") as f:
-        get_clustering = pickle.load(f)
-    
-    # data = pd.read_csv(f"{data_directory}/batch_results.csv", index_col = 0)
-    # indexes= pd.read_csv(f"{data_directory}/good_indexes.csv", index_col = 0).iloc[:, 0]
-    # pipelines = pd.read_csv(f"{data_directory}/pipelines.csv", index_col = 0)
-    # df = pd.DataFrame(index = indexes, data = data.values, columns = pipelines)
-    builder = PortFolioBuilder()
-    builder.build_portfolio(df, [2,8])

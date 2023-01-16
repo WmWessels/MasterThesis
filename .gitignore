@@ -110,6 +110,7 @@ ENV/
 env.bak/
 venv.bak/
 fstudy_env/
+masterthesisenv/
 
 # Spyder project settings
 .spyderproject
@@ -130,5 +131,4 @@ dmypy.json
 .pyre/
 
 # custom
-data/
 logs/

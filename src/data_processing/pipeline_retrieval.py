@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 from sklearn.pipeline import Pipeline
-from typing import Iterator, Literal, Optional
+from typing import List, Optional
 
 class PipelineReader:
 
@@ -10,7 +10,7 @@ class PipelineReader:
         self.log_directory = log_directory
 
     @staticmethod
-    def get_folders(log_directory: str) -> Iterator[str]:
+    def get_folders(log_directory: str) -> List[str]:
         subfolders = [f.path for f in os.scandir(log_directory) if f.is_dir()]
         return subfolders
     
@@ -28,7 +28,6 @@ class PipelineReader:
         return pipeline_frame
     
 def main():
-    data_directory = "../data"
     log_directory = "../logs"
     reader = PipelineReader(log_directory)
     print(list(reader.get_folders(reader.log_directory)))
