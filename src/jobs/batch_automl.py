@@ -48,7 +48,7 @@ class AutomlExecutor:
             batch_scores.append(score)
         
         if store_to_file:
-            pd.DataFrame(index = dataset_ids, data = batch_scores).to_csv("../data/gama_runs.csv")
+            pd.DataFrame(index = dataset_ids, data = batch_scores).to_csv(os.getcwd() + "/src/data/gama_runs.csv")
         return batch_scores
 
 def main():
