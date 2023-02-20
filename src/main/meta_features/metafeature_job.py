@@ -3,15 +3,15 @@ from openml.tasks import TaskType
 import pandas as pd
 import numpy as np
 
+import time
+
 from pymfe.mfe import MFE
-from metafeature_mapping import mapping_general, mapping_infotheory, mapping_stat
-from utils import batch
+from metafeature_mapping import mapping_general, mapping_infotheory, mapping_stat, mapping_landmarking
+from ..utils import batch
 from sklearn.impute import SimpleImputer
 
-from gama.utilities.preprocessing import basic_encoding
-
 def main() -> None:
-    import time
+    
 
     datasets = openml.datasets
     classification_datasets = openml.tasks.list_tasks(task_type=TaskType.SUPERVISED_CLASSIFICATION, output_format="dataframe")
@@ -83,7 +83,6 @@ def main() -> None:
                 meta_features.append(vals)
                 
             except Exception as e:
-                print(e)
                 meta_features.append([None for i in range(len(columns))])
                 times.append([None for i in range(len(columns))])
                 total_times.append(None)

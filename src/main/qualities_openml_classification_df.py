@@ -230,6 +230,7 @@ def main() -> None:
     columns = list(mfe.extract_metafeature_names())
     columns_lm = list(mfe_landmark.extract_metafeature_names())
     columns.extend(columns_lm)
+    columns.extend(["missing.mean", "missing.sd"])
     meta_features = []
     times = []
     total_times = []
@@ -240,8 +241,10 @@ def main() -> None:
         print(idx)
         try:
             dataset = datasets.get_dataset(idx)
-            X, y, cat_mask, _ = dataset.get_data(dataset_format="dataframe", target = dataset.default_target_attribute)
+            X, y, cat_mask, attr = dataset.get_data(dataset_format="dataframe", target = dataset.default_target_attribute)
+            cat_cols = [b for a,b in zip(cat_mask, attr) if a]
             X, y = X.to_numpy(), y.to_numpy()
+            missing_vals = get
             begin_time = time.time()
             num_mask = [not elem for elem in cat_mask]
             C = X[:, cat_mask]
@@ -261,8 +264,8 @@ def main() -> None:
                 imputed_X = imputed_X[:, :-1]
                 X = X[:, :-1]
                 print("y was changed", y)
-            mfe_landmark.fit(imputed_X, y)
-            mfe.fit(X, y)
+            mfe_landmark.fit(imputed_X, y, cat_cols = cat_cols)
+            mfe.fit(X, y, cat_cols = cat_cols)
             _, vals, time_mf = mfe.extract()
             _, vals_lm, time_lm = mfe_landmark.extract()
             time_calc_end = time.time()

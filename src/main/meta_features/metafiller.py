@@ -38,10 +38,16 @@ class BackFiller:
         return len(np.unique(y))
 
     @staticmethod
-    def get_freq_class(y: np.array):
+    def get_freq_class_mean(y: np.array):
         _, counts = np.unique(y, return_counts=True)
         freq = counts / y.size
-        return freq.nanmean(), freq.std()
+        return freq.nanmean()
+
+    @staticmethod
+    def get_freq_class_sd(y: np.array):
+        _, counts = np.unique(y, return_counts=True)
+        freq = counts / y.size
+        return freq.std()
 
     @staticmethod
     def get_nr_num(X: np.array):
@@ -58,60 +64,135 @@ class BackFiller:
         return nr_attr / nr_inst
 
     @staticmethod
-    def get_iqr(X: np.array):
+    def get_iqr_mean(X: np.array):
         iqr = scipy.stats.iqr(X, axis = 0, nan_policy = "omit")
-        return np.nanmean(iqr), np.nanstd(iqr)
+        return np.nanmean(iqr)
+
     @staticmethod
-    def get_cor(X: np.array):
+    def get_iqr_sd(X: np.array):
+        iqr = scipy.stats.iqr(X, axis = 0, nan_policy = "omit")
+        return np.nanstd(iqr)
+
+    @staticmethod
+    def get_cor_mean(X: np.array):
         df = pd.DataFrame(X)
         cor = df.corr().values
-        return np.nanmean(cor), np.nanstd(cor)
+        return np.nanmean(cor)
+
+    @staticmethod
+    def get_cor_sd(X: np.array):
+        df = pd.DataFrame(X)
+        cor = df.corr().values
+        return np.nanstd(cor)
     
     @staticmethod
-    def get_cov(X: np.array):
+    def get_cov_mean(X: np.array):
         df = pd.DataFrame(X)
         cov = df.cov().values
-        return np.nanmean(cov), np.nanstd(cov)
+        return np.nanmean(cov)
+
     @staticmethod
-    def get_kurtosis(X):
+    def get_cov_sd(X: np.array):
+        df = pd.DataFrame(X)
+        cov = df.cov().values
+        return np.nanstd(cov)
+
+    @staticmethod
+    def get_kurtosis_mean(X):
         df = pd.DataFrame(X)
         kurtosis = df.kurtosis(axis = 0).values
         return np.nanmean(kurtosis), np.nanstd(kurtosis)
+    
     @staticmethod
-    def get_max(X):
+    def get_kurtosis_sd(X):
+        df = pd.DataFrame(X)
+        kurtosis = df.kurtosis(axis = 0).values
+        return np.nanstd(kurtosis)
+
+    @staticmethod
+    def get_max_mean(X):
         df = pd.DataFrame(X)
         max_ = df.max(axis = 0).values
-        return np.nanmean(max_), np.nanstd(max_)
+        return np.nanmean(max_)
+
     @staticmethod
-    def get_mean(X):
+    def get_max_sd(X):
+        df = pd.DataFrame(X)
+        max_ = df.max(axis = 0).values
+        return np.nanstd(max_)
+
+    @staticmethod
+    def get_mean_mean(X):
         df = pd.DataFrame(X)
         mean_ = df.mean(axis = 0).values
-        return np.nanmean(mean_), np.nanstd(mean_)
+        return np.nanmean(mean_)
+    
     @staticmethod
-    def get_median(X):
+    def get_mean_sd(X):
+        df = pd.DataFrame(X)
+        mean_ = df.mean(axis = 0).values
+        return np.nanstd(mean_)
+
+    @staticmethod
+    def get_median_mean(X):
         df = pd.DataFrame(X)
         median_ = df.median(axis = 0).values
-        return np.nanmean(median_), np.nanstd(median_)
+        return np.nanmean(median_)
+    
     @staticmethod
-    def get_min(X):
+    def get_median_sd(X):
+        df = pd.DataFrame(X)
+        median_ = df.median(axis = 0).values
+        return np.nanstd(median_)
+
+    @staticmethod
+    def get_min_mean(X):
         df = pd.DataFrame(X)
         min_ = df.min(axis = 0).values
-        return np.nanmean(min_), np.nanstd(min_)
+        return np.nanmean(min_)
+
     @staticmethod
-    def get_std(X):
+    def get_min_sd(X):
+        df = pd.DataFrame(X)
+        min_ = df.min(axis = 0).values
+        return np.nanstd(min_)
+
+    @staticmethod
+    def get_std_mean(X):
         df = pd.DataFrame(X)
         std = df.std(axis = 0).values
-        return np.nanmean(std), np.nanstd(std)
+        return np.nanmean(std)
+    
     @staticmethod
-    def get_skewness(X):
+    def get_std_sd(X):
+        df = pd.DataFrame(X)
+        std = df.std(axis = 0).values
+        return np.nanstd(std)
+
+    @staticmethod
+    def get_skewness_mean(X):
         df = pd.DataFrame(X)
         skew = df.skew(axis = 0).values
-        return np.nanmean(skew), np.nanmean(skew)
+        return np.nanmean(skew)
+    
     @staticmethod
-    def get_var(X):
+    def get_skewness_sd(X):
+        df = pd.DataFrame(X)
+        skew = df.skew(axis = 0).values
+        return np.nanstd(skew)
+
+    @staticmethod
+    def get_var_mean(X):
         df = pd.DataFrame(X)
         var = df.var(axis = 0).values
-        return np.nanmean(var), np.nanstd(var)
+        return np.nanmean(var)
+    
+    @staticmethod
+    def get_var_sd(X):
+        df = pd.DataFrame(X)
+        var = df.var(axis = 0).values
+        return np.nanstd(var)
+        
     @staticmethod
     def get_outliers(X, whis: float = 1.5):
         if type(X) == pd.DataFrame:
@@ -124,3 +205,5 @@ class BackFiller:
         cut_high = q_3 + whis_iqr
 
         return np.sum(np.logical_or(cut_low > v_min, cut_high < v_max))
+
+
