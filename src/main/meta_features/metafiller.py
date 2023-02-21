@@ -1,6 +1,11 @@
 import numpy as np
 import scipy
 import pandas as pd
+from pymfe.info_theory import MFEInfoTheory
+from pymfe.landmarking import MFELandmarking
+from sklearn.metrics import accuracy_score
+from typing import Optional, Callable
+
 
 class BackFiller:
     
@@ -206,4 +211,52 @@ class BackFiller:
 
         return np.sum(np.logical_or(cut_low > v_min, cut_high < v_max))
 
+    @staticmethod
+    def get_attr_ent_mean(X: np.array, y: Optional[np.array] = None):
+        attr_conc = MFEInfoTheory.ft_attr_conc(X)
+        return np.nanmean(attr_conc)
 
+    @staticmethod
+    def get_attr_ent_sd(X: np.array, y: Optional[np.array] = None):
+        attr_conc = MFEInfoTheory.ft_attr_conc(X)
+        return np.nanstd(attr_conc)
+
+    @staticmethod
+    def get_class_conc_mean(X: np.array, y: np.array):
+        class_conc = MFEInfoTheory.ft_class_conc(X, y)
+        return np.nanmean(class_conc)
+    
+    @staticmethod
+    def get_class_conc_sd(X: np.array, y: np.array):
+        class_conc = MFEInfoTheory.ft_class_conc(X, y)
+        return np.nanstd(class_conc)
+    
+    @staticmethod
+    def get_eq_num_attr_mean(X: np.array, y: np.array):
+        eq_num_attr = MFEInfoTheory.ft_eq_num_attr(X, y)
+        return np.nanmean(eq_num_attr)
+
+    @staticmethod
+    def get_eq_num_attr_sd(X: np.array, y: np.array):
+        eq_num_attr = MFEInfoTheory.ft_eq_num_attr(X, y)
+        return np.nanmean(eq_num_attr)
+    
+    @staticmethod
+    def get_joint_ent_mean(X: np.array, y: np.array):
+        joint_ent = MFEInfoTheory.ft_eq_num_attr(X, y)
+        return np.nanmean(joint_ent)
+
+    @staticmethod
+    def get_joint_ent_sd(X: np.array, y: np.array):
+        joint_ent = MFEInfoTheory.ft_eq_num_attr(X, y)
+        return np.nanstd(joint_ent)
+
+    @staticmethod
+    def get_attr_conc_mean(X: np.array, y: Optional[np.array] = None):
+        attr_conc = MFEInfoTheory.ft_attr_conc(X)
+        return np.nanmean(attr_conc)
+
+    @staticmethod
+    def get_attr_conc_sd(X: np.array, y: Optional[np.array] = None):
+        attr_conc = MFEInfoTheory.ft_attr_conc(X)
+        return np.nanstd(attr_conc)

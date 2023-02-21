@@ -20,3 +20,6 @@ def with_timeout(timeout):
                 pool.close()        
         return inner
     return decorator
+
+class ImputationError(Exception):
+    pass

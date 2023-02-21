@@ -55,11 +55,13 @@ mapping_infotheory = {
                     "joint_ent": ["ft_joint_ent", "C", "y"],
                     "attr_conc": ["ft_attr_conc", "C"]
 }
+
 mapping_landmarking = {
                     "best_node": "0.75",
                     "linear_discr": "0.75",
                     "naive_bayes": "0.75",
                     "random_node": "0.75",
                     "worst_node": "0.75"
-
 }
+
+mapping = mapping_general | mapping_stat | mapping_infotheory | mapping_landmarking
