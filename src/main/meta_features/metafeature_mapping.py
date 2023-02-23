@@ -1,14 +1,3 @@
-# mapping_general = {
-#                     "num_to_cat": "get_num_to_cal",
-#                     "freq_class": "get_freq_class",
-#                     "nr_attr": "get_nr_attr",
-#                     "nr_bin": "get_nr_bin",
-#                     "nr_cat": "get_nr_cat",
-#                     "nr_class": "get_nr_class",
-#                     "nr_inst": "get_nr_inst",
-#                     "nr_num": "get_nr_num"
-# }
-
 mapping_general = {
                     "num_to_cat": "get_num_to_cat",
                     "freq_class.nanmean": "get_freq_class_mean",
@@ -49,19 +38,29 @@ mapping_stat = {
 }
 
 mapping_infotheory = {
-                    "attr_ent": ["ft_attr_ent", "C"],
-                    "class_conc": ["ft_class_conc", "C", "y"],
-                    "eq_num_attr": ["ft_eq_num_attr", "C", "y"],
-                    "joint_ent": ["ft_joint_ent", "C", "y"],
-                    "attr_conc": ["ft_attr_conc", "C"]
+                    "attr_ent.nanmean": "get_attr_ent_mean",
+                    "attr_ent.nansd": "get_attr_ent_sd",
+                    "class_conc.nanmean": "get_class_conc_mean",
+                    "class_conc.nansd": "get_class_conc_sd",
+                    "eq_num_attr.nanmean": "get_eq_num_attr_mean",
+                    "eq_num_attr.nansd": "get_eq_num_attr_sd",
+                    "joint_ent.nanmean": "get_joint_ent_mean",
+                    "joint_ent.nansd": "get_joint_ent_sd",
+                    "attr_conc.nanmean": "get_attr_conc_mean",
+                    "attr_conc.nansd": "get_attr_conc_sd"
 }
 
 mapping_landmarking = {
-                    "best_node": "0.75",
-                    "linear_discr": "0.75",
-                    "naive_bayes": "0.75",
-                    "random_node": "0.75",
-                    "worst_node": "0.75"
+                    "best_node.mean": 0.7,
+                    "best_node.sd": 0.05,
+                    "linear_discr.mean": 0.7,
+                    "linear_discr.sd": 0.05,
+                    "naive_bayes.mean": 0.7,
+                    "naive_bayes.sd": 0.05,
+                    "random_node.mean": 0.7,
+                    "random_node.sd": 0.05,
+                    "worst_node.mean": 0.7,
+                    "worst_node.sd": 0.05
 }
 
 mapping = mapping_general | mapping_stat | mapping_infotheory | mapping_landmarking

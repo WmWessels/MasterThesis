@@ -6,16 +6,16 @@ import time
 import openml
 
 from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
 
 from typing import List, Optional, Dict
 
 from pymfe.mfe import MFE
 from metafiller import BackFiller
-from metaimputer import MetaImputer
 
 from metafeature_mapping import *
 
-from ..utils import ImputationError
+# from main.utils import ImputationError
 
 class MetaComputer:
 
@@ -23,32 +23,34 @@ class MetaComputer:
                  mfe: MFE,
                  mfe_lm: MFE, 
                  backfiller: BackFiller, 
-                 imputer: MetaImputer
+                 scaler: StandardScaler
         ):
         self.mfe = mfe
         self.mfe_lm = mfe_lm
         self.backfiller = backfiller
-        self.imputer = imputer
+        self.scaler = scaler
 
-    @classmethod
-    def _calc_pymfe(cls, X: np.array, imputed_X: np.array, y: np.array, cat_cols: list[str]):
+    def _calc_pymfe(self, X: np.array, imputed_X: np.array, y: np.array, cat_cols: list[str]):
         """calculate metafeatures using pymfe library"""
 
         # calculate meta features
-        cls.mfe.fit(X, y, cat_cols = cat_cols)
-        cls.mfe_lm.fit(imputed_X, y, cat_cols = cat_cols)
-        columns, features = cls.mfe.extract()
-        columns_lm, features_lm = cls.mfe_lm.extract()
+        self.mfe.fit(X, y, cat_cols = cat_cols)
+        self.mfe_lm.fit(imputed_X, y, cat_cols = cat_cols)
+        columns, features = self.mfe.extract()
+        columns_lm, features_lm = self.mfe_lm.extract()
 
         # extract columns where meta features are missing
+        
         columns.extend(columns_lm)
+        # mean, sd = self.backfiller.get_missing(X)
+        # columns.extend(["missing.nanmean", "missing.nansd"])
         features.extend(features_lm)
-        missing_columns = [column for column, meta_feature in zip(columns, meta_features) if np.isnan(meta_feature)]
+        # features.extend([mean, sd])
+        missing_columns = [column for column, meta_feature in zip(columns, features) if np.isnan(meta_feature)]
         meta_features = {k: v for k,v in zip(columns, features)}
         return meta_features, missing_columns
 
-    @classmethod
-    def _backfill_metafeatures(cls, 
+    def _backfill_metafeatures(self, 
                                X: np.array, 
                                y: np.array, 
                                cat_cols: list[str], 
@@ -58,24 +60,16 @@ class MetaComputer:
         """backfill metafeatures, typically called after execution of function `calc_metafeatures`, but can also be ran as a replacement for calc_metafeatures"""
 
         for column in missing_columns:
-            # if element in mapping_infotheory.keys():
-            #     imputing_class = mfe_info
-            #     value = mapping[element]
-            #     func, args = value[0], value[1:]
-            #     C = pd.DataFrame(X).select_dtypes('category')
-            #     C = C.to_numpy()
-            #     if len(args) > 1:
-            #         args = C, y
-            #     else:
-            #         args = C
-            # else:
-            
-            func = mapping[column]
-            exec_func = getattr(cls.backfiller, func)
-            result = exec_func(X)
+            if not column in mapping_landmarking.keys():
+                args = X if column not in mapping_infotheory.keys() else (X[cat_cols], y)           
+                func = mapping[column]
+                exec_func = getattr(self.backfiller, func)
+                result = exec_func(args)
+            else:
+                result = mapping[column]
             
             meta_features[column] = result
-        
+        print(f"recalculated {len(missing_columns)} meta features")
         missing_columns = [column for column, value in meta_features.items() if np.isnan(value)]
         
         return meta_features, missing_columns
@@ -88,22 +82,23 @@ class MetaComputer:
             meta_features[column] = "impute value"
         
 
-    @classmethod
-    def get_metafeatures(cls, X: np.array, imputed_X: np.array, y: np.array, cat_cols: List[str]):
+    def get_metafeatures(self, X: np.array, imputed_X: np.array, y: np.array, cat_cols: List[str]):
 
-        meta_features, missing_columns = cls._calc_pymfe(X, imputed_X, y, cat_cols)
+        meta_features, missing_columns = self._calc_pymfe(X, imputed_X, y, cat_cols)
         if any(missing_columns):
-            meta_features, missing_columns = cls._backfill_metafeatures(X, y, cat_cols, meta_features, missing_columns)
+            meta_features, missing_columns = self._backfill_metafeatures(X, y, cat_cols, meta_features, missing_columns)
         if any(missing_columns):
-            meta_features = cls._impute_metafeatures(X, y, missing_columns)
-        if np.isnan(meta_features.values).any():
-            raise ImputationError(
-                "Something went wrong during imputation, could not backfill all nan values"
-            )
-        return meta_features
+            meta_features = self._impute_metafeatures(X, y, missing_columns)
+        # if np.isnan(meta_features.values).any():
+        #     raise ImputationError(
+        #         "Something went wrong during imputation, could not backfill all nan values"
+        #     )
+        scaled_meta_features = self.scaler.transform([list(meta_features.values())])
+
+        return meta_features.keys(), scaled_meta_features[0]
 
     
-    def get_metafeatures_job(cls, indexes: List[int], columns: List[str], save: Optional[bool] = True):
+    def get_metafeatures_job(cls, indexes: List[int], save: Optional[bool] = True):
                 
         meta_features = []
         for idx in indexes:
@@ -116,19 +111,20 @@ class MetaComputer:
             end_time = time.time()
             print(f"finished preprocessing in {end_time - begin_time}")
             begin_calculations = time.time()
-            meta_data = cls.get_metafeatures(X, imputed_X, y, cat_cols)
+            columns, meta_data = cls.get_metafeatures(X, imputed_X, y, cat_cols)
             end_calculations = time.time()
-            print(f"finished calculating meta data in {begin_calculations - end_calculations}")
+            print(f"finished calculating meta data in {end_calculations - begin_calculations}")
             meta_features.append(meta_data)
-        
+            print(meta_data)
         cls.meta_features = meta_features
+
 
         if save:
             pd.DataFrame(index = indexes, data = meta_features, columns = columns).to_csv("metafeatures.csv")
 
             
     @classmethod    
-    def _impute(cls, X: np.array, y: np.array, cat_mask = List[bool]):
+    def _impute(cls, X: np.array, y: np.array, cat_mask: List[bool]):
 
         num_mask = [not elem for elem in cat_mask]
 
@@ -151,3 +147,21 @@ class MetaComputer:
             X = X[:, :-1]
 
         return X, imputed_X, y
+    
+
+if __name__ == "__main__":
+    indexes = [2, 3]
+    features = ["num_to_cat", "freq_class", "nr_attr", "nr_bin", "nr_cat", "nr_class", "nr_inst", \
+                "nr_num", "cor", "cov", "iq_range", "kurtosis", "max", "mean", "median", "min",   \
+                "nr_outliers", "sd", "skewness", "var", "attr_ent", "class_conc", "eq_num_attr", "joint_ent", "attr_conc"]
+    features_lm = ["best_node", "linear_discr", "naive_bayes", "random_node", "worst_node"]
+
+    mfe = MFE(features = features, summary = ["nanmean", "nansd"])
+    mfe_lm = MFE(features = features_lm, groups = ["landmarking"], summary = ["mean", "sd"], num_cv_folds = 5, lm_sample_frac = 0.5, suppress_warnings=True)
+    backfiller = BackFiller()
+    from sklearn.preprocessing import MinMaxScaler
+    meta_data = pd.read_csv("meta_data.csv", index_col = 0)
+    scaler = MinMaxScaler()
+    transformed = scaler.fit_transform(meta_data)
+    mf_calculator = MetaComputer(mfe = mfe, mfe_lm = mfe_lm, backfiller = backfiller, scaler = scaler)
+    mf_calculator.get_metafeatures_job(indexes = indexes, )

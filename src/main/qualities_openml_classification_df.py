@@ -244,7 +244,6 @@ def main() -> None:
             X, y, cat_mask, attr = dataset.get_data(dataset_format="dataframe", target = dataset.default_target_attribute)
             cat_cols = [b for a,b in zip(cat_mask, attr) if a]
             X, y = X.to_numpy(), y.to_numpy()
-            missing_vals = get
             begin_time = time.time()
             num_mask = [not elem for elem in cat_mask]
             C = X[:, cat_mask]
