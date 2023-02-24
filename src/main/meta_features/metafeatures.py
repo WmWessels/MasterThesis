@@ -14,8 +14,10 @@ from pymfe.mfe import MFE
 from metafiller import BackFiller
 
 from metafeature_mapping import *
+import os
+print(os.getcwd())
 
-# from main.utils import ImputationError
+from src.main.utils import ImputationError
 
 class MetaComputer:
 
@@ -107,7 +109,7 @@ class MetaComputer:
             X, y, cat_mask, attributes = dataset.get_data(dataset_format="array", target = dataset.default_target_attribute)
             cat_cols = [b for a,b in zip(cat_mask, attributes) if a]
             begin_time = time.time()
-            X, imputed_X, y = cls._impute(X, y, cat_mask)
+            X, imputed_X, y = cls.impute(X, y, cat_mask)
             end_time = time.time()
             print(f"finished preprocessing in {end_time - begin_time}")
             begin_calculations = time.time()
@@ -124,7 +126,7 @@ class MetaComputer:
 
             
     @classmethod    
-    def _impute(cls, X: np.array, y: np.array, cat_mask: List[bool]):
+    def impute(cls, X: np.array, y: np.array, cat_mask: List[bool]):
 
         num_mask = [not elem for elem in cat_mask]
 
@@ -164,4 +166,4 @@ if __name__ == "__main__":
     scaler = MinMaxScaler()
     transformed = scaler.fit_transform(meta_data)
     mf_calculator = MetaComputer(mfe = mfe, mfe_lm = mfe_lm, backfiller = backfiller, scaler = scaler)
-    mf_calculator.get_metafeatures_job(indexes = indexes, )
+    mf_calculator.get_metafeatures_job(indexes = indexes)
