@@ -64,3 +64,28 @@ class MetaOPTICS(OPTICS):
         Future function to predict the portfolio based on the clustering model
         """
         pass
+
+if __name__ == "__main__":
+    meta_data = pd.read_csv("meta_data.csv", index_col = 0)
+    from sklearn.preprocessing import MinMaxScaler, StandardScaler
+    from sklearn.decomposition import PCA
+    from sklearn.manifold import TSNE
+    from sklearn.kernel_approximation import RBFSampler
+    import matplotlib.pyplot as plt
+    scaler = StandardScaler()
+    scaled_meta_data = scaler.fit_transform(meta_data)
+    # cluster = MetaOPTICS(min_samples = 25, xi = 0.05, min_cluster_size = 0.05)
+    cluster = MetaKernelKMeans(n_clusters = 5, kernel = "rbf", gamma = 0.1)
+    cluster.fit(scaled_meta_data)
+    labels = cluster.labels_
+
+    rbfs = RBFSampler(gamma = 0.1)
+    kernelized_data = rbfs.fit_transform(scaled_meta_data)
+
+    tsne = TSNE(n_components = 2)
+    reduced_data = tsne.fit_transform(kernelized_data)
+
+    plt.scatter(reduced_data.T[0], reduced_data.T[1], c = labels)
+    plt.show()
+    print()
+    print(np.unique(cluster.labels_, return_counts = True))
