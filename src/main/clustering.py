@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 import pickle
 
+
+
 from pandas import DataFrame
 from sklearn.cluster import KMeans
 
