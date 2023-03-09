@@ -20,8 +20,6 @@ import skops.io as sio
 
 import matplotlib.pyplot as plt
 
-<<<<<<< HEAD
-=======
 
 class Reduction(Enum):
     PCA = "pca"
@@ -32,7 +30,6 @@ class MetaCluster(Protocol):
     def load_from_file(self):
         ...
 
->>>>>>> 41b1fea773166c18a7bfa349bd83052583438ac0
     def save_to_file(self):
         ...
     
@@ -113,13 +110,16 @@ if __name__ == "__main__":
     """
     Example of how to use the clustering models work and how to visualize the clusters
     """
-    meta_data = pd.read_csv("meta_data.csv", index_col = 0).sample(700, random_state = 0)
+    meta_data = pd.read_csv("meta_features_regr.csv", index_col = 0)
 
-    meta_kernelkmeans = MetaKernelKMeans(n_clusters = 5, kernel = "rbf", gamma = 0.2, random_state = 0)
-    scaled_metadata = MinMaxScaler().fit_transform(meta_data)
+    meta_kernelkmeans = MetaKernelKMeans(n_clusters = 5, kernel = "rbf", gamma = 0.1, random_state = 42)
+    # meta_optics = MetaOPTICS()
+    scaled_metadata = StandardScaler().fit_transform(meta_data)
+    # meta_optics.fit(scaled_metadata)
     meta_kernelkmeans.fit(scaled_metadata)
-    meta_kernelkmeans.save_to_file()
+    meta_kernelkmeans.plot(scaled_metadata, reduction_method = "tsne")
+    # # meta_kernelkmeans.save_to_file()
 
     labels = meta_kernelkmeans.labels_
+    # labels = meta_optics.labels_
     print(np.unique(labels, return_counts = True))
-    meta_kernelkmeans.plot(scaled_metadata, reduction_method = "tsne")
