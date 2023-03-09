@@ -6,7 +6,7 @@ import numpy as np
 import time
 
 from pymfe.mfe import MFE
-from metafeature_mapping import mapping_general, mapping_infotheory, mapping_stat, mapping_landmarking
+from main.meta_features.func_mapping_clf import mapping_general, mapping_infotheory, mapping_stat, mapping_landmarking
 from ..utils import batch
 from sklearn.impute import SimpleImputer
 

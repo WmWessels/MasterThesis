@@ -11,11 +11,10 @@ from sklearn.preprocessing import StandardScaler
 from typing import List, Optional, Dict
 
 from pymfe.mfe import MFE
-from metafiller import BackFiller
+from src.main.meta_features.regression.metafiller import BackFiller
 
-from metafeature_mapping import *
+from main.meta_features.func_mapping_clf import *
 import os
-print(os.getcwd())
 
 from src.main.utils import ImputationError
 
@@ -91,10 +90,7 @@ class MetaComputer:
             meta_features, missing_columns = self._backfill_metafeatures(X, y, cat_cols, meta_features, missing_columns)
         if any(missing_columns):
             meta_features = self._impute_metafeatures(X, y, missing_columns)
-        # if np.isnan(meta_features.values).any():
-        #     raise ImputationError(
-        #         "Something went wrong during imputation, could not backfill all nan values"
-        #     )
+
         scaled_meta_features = self.scaler.transform([list(meta_features.values())])
 
         return meta_features.keys(), scaled_meta_features[0]
@@ -119,7 +115,6 @@ class MetaComputer:
             meta_features.append(meta_data)
             print(meta_data)
         cls.meta_features = meta_features
-
 
         if save:
             pd.DataFrame(index = indexes, data = meta_features, columns = columns).to_csv("metafeatures.csv")
@@ -153,9 +148,9 @@ class MetaComputer:
 
 if __name__ == "__main__":
     indexes = [2, 3]
-    features = ["num_to_cat", "freq_class", "nr_attr", "nr_bin", "nr_cat", "nr_class", "nr_inst", \
+    features = ["num_to_cat", "nr_class", "freq_class", "nr_attr", "nr_bin", "nr_cat", "nr_inst", \
                 "nr_num", "cor", "cov", "iq_range", "kurtosis", "max", "mean", "median", "min",   \
-                "nr_outliers", "sd", "skewness", "var", "attr_ent", "class_conc", "eq_num_attr", "joint_ent", "attr_conc"]
+                "nr_outliers", "sd", "skewness", "var", "attr_ent", "joint_ent", "eq_num_attr", "class_conc", "attr_conc"]
     features_lm = ["best_node", "linear_discr", "naive_bayes", "random_node", "worst_node"]
 
     mfe = MFE(features = features, summary = ["nanmean", "nansd"])
