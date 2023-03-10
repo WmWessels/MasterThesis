@@ -1,24 +1,30 @@
 {
     "classification": {
-        "freq_class.nanmean": "get_freq_class_mean",
-        "freq_class.nansd": "get_freq_class_sd",
-        "nr_class": "get_nr_class",
-        "class_conc.nanmean": "get_class_conc_mean",
-        "class_conc.nansd": "get_class_conc_sd",
-        "eq_num_attr.nanmean": "get_eq_num_attr_mean",
-        "eq_num_attr.nansd": "get_eq_num_attr_sd",
-        "joint_ent.nanmean": "get_joint_ent_mean",
-        "joint_ent.nansd": "get_joint_ent_sd",
-        "best_node.mean": 0.7,
-        "best_node.sd": 0.05,
-        "linear_discr.mean": 0.7,
-        "linear_discr.sd": 0.05,
-        "naive_bayes.mean": 0.7,
-        "naive_bayes.sd": 0.05,
-        "random_node.mean": 0.7,
-        "random_node.sd": 0.05,
-        "worst_node.mean": 0.7,
-        "worst_node.sd": 0.05
+        "general": {
+            "freq_class.nanmean": "get_freq_class_mean",
+            "freq_class.nansd": "get_freq_class_sd",
+            "nr_class": "get_nr_class",
+            "class_conc.nanmean": "get_class_conc_mean",
+            "class_conc.nansd": "get_class_conc_sd",
+            "eq_num_attr.nanmean": "get_eq_num_attr_mean",
+            "eq_num_attr.nansd": "get_eq_num_attr_sd",
+            "joint_ent.nanmean": "get_joint_ent_mean",
+            "joint_ent.nansd": "get_joint_ent_sd"
+        },
+
+        "landmarking":
+        {
+            "best_node.nanmean": "get_clf_lm_mean",
+            "best_node.nansd": "get_clf_lm_sd",
+            "linear_discr.nanmean": "get_clf_lm_mean",
+            "linear_discr.nansd": "get_clf_lm_sd",
+            "naive_bayes.nanmean": "get_clf_lm_mean",
+            "naive_bayes.nansd": "get_clf_lm_sd",
+            "random_node.nanmean": "get_clf_lm_mean",
+            "random_node.nansd": "get_clf_lm_sd",
+            "worst_node.nanmean": "get_clf_lm_mean",
+            "worst_node.nansd": "get_clf_lm_sd"
+        }
     },
     "regression": 
         { 

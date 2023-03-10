@@ -2,7 +2,7 @@ import numpy as np
 import scipy
 import pandas as pd
 from pymfe.info_theory import MFEInfoTheory
-from landmarking import LandmarkingRegressor
+from regression.landmarking import LandmarkingRegressor
 from typing import Optional
 
 class ClassificationMetaFeatures:
@@ -18,13 +18,13 @@ class ClassificationMetaFeatures:
     def get_freq_class_mean(y: np.array, X = None):
         _, counts = np.unique(y, return_counts=True)
         freq = counts / y.size
-        return freq.nanmean()
+        return np.nanmean(freq)
 
     @staticmethod
     def get_freq_class_sd(y: np.array, X = None):
         _, counts = np.unique(y, return_counts=True)
         freq = counts / y.size
-        return freq.std()
+        return np.nanstd(freq)
     
     def get_class_conc_mean(self, X: np.array, y: np.array):
         class_conc = self.custom_extractor.ft_class_conc(X, y)
@@ -49,6 +49,14 @@ class ClassificationMetaFeatures:
     def get_joint_ent_sd(self, X: np.array, y: np.array):
         joint_ent = self.custom_extractor.ft_eq_num_attr(X, y)
         return np.nanstd(joint_ent)
+
+    @staticmethod
+    def get_clf_lm_mean(*args):
+        return 0.7
+    
+    @staticmethod
+    def get_clf_lm_sd(*args):
+        return 0.05
 
 class RegressionMetaFeatures:
 

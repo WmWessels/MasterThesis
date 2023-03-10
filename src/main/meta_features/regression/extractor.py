@@ -3,7 +3,6 @@ from pymfe.mfe import MFE
 import openml
 import numpy as np
 import pandas as pd
-from metafiller import RegressionMetaFeatures, GenericMetaFeatures
 from pymfe.info_theory import MFEInfoTheory
 from landmarking import LandmarkingRegressor
 import scipy
@@ -29,15 +28,15 @@ class RegressionExtractor:
         self.regression_functions_landmarking = function_dict["regression"]["landmarking"]
         self.general_functions = function_dict["always"]
 
-    def retrieve(self, X, y, cat_cols):
+    def retrieve(self, X, y, cat_mask):
         """
         Retrieve metafeatures from the dataset
         """
-        columns, features = self._run_pymfe(X, y)
-        for column, feature in zip(columns, features):
-            self.metafeatures[column] = feature
+        names, features = self._run_pymfe(X, y)
+        for name, feature in zip(names, features):
+            self.metafeatures[name] = feature
         
-        self._run_regressor_funcs(X, y, cat_cols)
+        self._run_regressor_funcs(X, y, cat_mask)
         self._backfill_missing(X, y)
         self._impute_failures()
         return self.metafeatures
@@ -95,42 +94,40 @@ class RegressionExtractor:
                 self.metafeatures[feature] = "imputed"
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    features = ["num_to_cat", "nr_attr", "nr_bin", "nr_cat", "nr_inst", \
-                "nr_num", "cor", "cov", "iq_range", "kurtosis", "max", "mean", "median", "min",   \
-                "nr_outliers", "sd", "skewness", "var", "attr_ent", "attr_conc"]
-    mfe = MFE(features = features, groups = ["general", "statistical", "info-theory"], summary = ["nanmean", "nansd"])
     
-    regression_sets = openml.tasks.list_tasks(task_type= openml.tasks.TaskType.SUPERVISED_REGRESSION, output_format="dataframe")
-    regression_sets["size"] = regression_sets["NumberOfInstances"] * regression_sets["NumberOfFeatures"]
-    small_indexes = set(regression_sets.query("NumberOfInstances < 20").groupby('did').first().index)
-    large_indexes = set(regression_sets.query("NumberOfInstances > 500_000 or NumberOfFeatures > 2500 or size > 10_000_000").groupby('did').first().index)
-    indexes_to_filter = small_indexes.union(large_indexes)
-    indexes = list(map(int, set(regression_sets['did'].unique()).difference(indexes_to_filter)))
-    counter = 0
-    def batch(iterable , batch_size: int):
-        for i in range(0, len(iterable), batch_size):
-            yield iterable[i: i + batch_size]
-    for index_ in batch(indexes, 20):
-
-        meta_features = []
-        for ind in index_:
-            try:
-                regr = RegressionMetaFeatures(LandmarkingRegressor())
-                gen = GenericMetaFeatures(MFEInfoTheory())
-
-                extractor = RegressionExtractor(mfe, regr, gen)
-                dataset = openml.datasets.get_dataset(ind)
-                X, y, cat_mask, _ = dataset.get_data(dataset_format="array", target = dataset.default_target_attribute)
-                if type(X) == scipy.sparse._csr.csr_matrix:
-                    X = X.toarray()
-                mf = extractor.retrieve(X, y, cat_mask)
-                meta_features.append(mf)
-            except Exception as e:
-                print(e)
-                meta_features.append({k: np.nan for k in extractor.metafeatures.keys()})
+#     mfe = MFE(features = features, groups = ["general", "statistical", "info-theory"], summary = ["nanmean", "nansd"])
     
-        pd.DataFrame(index = index_, data = meta_features).to_csv(f"../data/regression/meta_features_{counter}.csv")
-        counter += 1
+#     regression_sets = openml.tasks.list_tasks(task_type= openml.tasks.TaskType.SUPERVISED_REGRESSION, output_format="dataframe")
+#     regression_sets["size"] = regression_sets["NumberOfInstances"] * regression_sets["NumberOfFeatures"]
+#     small_indexes = set(regression_sets.query("NumberOfInstances < 20").groupby('did').first().index)
+#     large_indexes = set(regression_sets.query("NumberOfInstances > 500_000 or NumberOfFeatures > 2500 or size > 10_000_000").groupby('did').first().index)
+#     indexes_to_filter = small_indexes.union(large_indexes)
+#     indexes = list(map(int, set(regression_sets['did'].unique()).difference(indexes_to_filter)))
+#     counter = 0
+#     def batch(iterable , batch_size: int):
+#         for i in range(0, len(iterable), batch_size):
+#             yield iterable[i: i + batch_size]
+#     for index_ in batch(indexes, 20):
+
+#         meta_features = []
+#         for ind in index_:
+#             try:
+#                 regr = RegressionMetaFeatures(LandmarkingRegressor())
+#                 gen = GenericMetaFeatures(MFEInfoTheory())
+
+#                 extractor = RegressionExtractor(mfe, regr, gen)
+#                 dataset = openml.datasets.get_dataset(ind)
+#                 X, y, cat_mask, _ = dataset.get_data(dataset_format="array", target = dataset.default_target_attribute)
+#                 if type(X) == scipy.sparse._csr.csr_matrix:
+#                     X = X.toarray()
+#                 mf = extractor.retrieve(X, y, cat_mask)
+#                 meta_features.append(mf)
+#             except Exception as e:
+#                 print(e)
+#                 meta_features.append({k: np.nan for k in extractor.metafeatures.keys()})
+    
+#         pd.DataFrame(index = index_, data = meta_features).to_csv(f"../data/regression/meta_features_{counter}.csv")
+#         counter += 1
     
