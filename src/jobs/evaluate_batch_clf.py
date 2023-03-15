@@ -1,22 +1,18 @@
-from typing import List, Iterator, Tuple, Optional
 import openml
+import numpy as np
 import pandas as pd
 
+from typing import Optional
+
 import os
-import random
-import multiprocessing  
-import functools
+
 import time
-from joblib import Parallel, delayed
-from gama.utilities.preprocessing import select_categorical_columns, basic_encoding
+from gama.utilities.preprocessing import basic_encoding
 
 from main.utils import batch, with_timeout
 
-
-from sklearn.base import TransformerMixin
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
+from sklearn.model_selection import cross_val_score
 import category_encoders as ce
 
 from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB
@@ -51,8 +47,13 @@ from sklearn.impute import SimpleImputer
 
 class PipelineExecutor:
 
-    @with_timeout(15)
-    def evaluate_pipeline(self, pipeline: Pipeline, X: pd.DataFrame, y: pd.Series) -> int:
+    @with_timeout(60)
+    def evaluate_pipeline(
+                            self, 
+                            pipeline: Pipeline, 
+                            X: pd.DataFrame, 
+                            y: pd.Series
+        ) -> int:
         """
         Evaluates a sklearn pipeline
         ----------
@@ -68,17 +69,21 @@ class PipelineExecutor:
         
         try:
             #Fit sklearn pipeline. When any kind of error occurs, return 0 as accuracy
-            X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=0)
-            pipeline.fit(X_train, y_train)
-            label_predictions = pipeline.predict(X_test)
-            accuracy = accuracy_score(y_test, label_predictions)
+            scores = cross_val_score(pipeline, X, y, cv=3, scoring = "log_loss")
+            accuracy = np.mean(scores)
+
         except Exception as e:
             print(e)
             accuracy = 0
 
         return accuracy
 
-    def evaluate_batch(self, dataset_ids: List[int], pipelines: List[Pipeline]) -> pd.DataFrame:
+    def evaluate_batch(
+                        self, 
+                        dataset_ids: list[int], 
+                        pipelines: list[Pipeline],
+                        is_classification: Optional[bool] = True
+        ) -> pd.DataFrame:
         """
         Evaluates a batch of data sets and pipelines
         ----------
@@ -92,7 +97,8 @@ class PipelineExecutor:
         """
         evaluations = []
         for dataset_id in dataset_ids:
-            dataset = openml.datasets.get_dataset(dataset_id)
+            results = []
+            dataset = openml.datasets.get_dataset(dataset_id, download_qualities = False)
             #Try to get the data. 
             #On failure, return a row with 0's for easy processing of the results and not crashing the batch job.
             try:
@@ -101,11 +107,14 @@ class PipelineExecutor:
                 print(e) 
                 evaluations.append([None for i in range(len(pipelines))])
                 continue
-            
-            x_enc, _ = basic_encoding(X, is_classification=True)
-                
-            res = Parallel(n_jobs=3)(delayed(self.evaluate_pipeline)(pipeline, x_enc, y) for pipeline in pipelines)
-            evaluations.append(list(res))  
+
+            x_enc, _ = basic_encoding(X, is_classification=is_classification)
+
+            for pipeline in pipelines:
+                result = self.evaluate_pipeline(pipeline, x_enc, y)
+                results.append(result)
+
+            evaluations.append(results)
             
         return pd.DataFrame(index = dataset_ids, data = evaluations, columns = [str(pipe) for pipe in pipelines])
 
