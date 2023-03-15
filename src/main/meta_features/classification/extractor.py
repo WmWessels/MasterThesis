@@ -36,7 +36,9 @@ class ClassificationExtractor:
         """
         Retrieve metafeatures from the dataset
         """
-        names, features = self._run_pymfe(X, y, cat_mask)
+        X, imputed_X, y = self.impute(X, y, cat_mask)
+
+        names, features = self._run_pymfe(X, y, imputed_X)
         for name, feature in zip(names, features):
             self.metafeatures[name] = feature
         
@@ -45,11 +47,10 @@ class ClassificationExtractor:
         self._impute_failures()
         return self.metafeatures
 
-    def _run_pymfe(self, X: np.array, y: np.array, cat_mask: list[str]):
+    def _run_pymfe(self, X: np.array, y: np.array, imputed_X: np.array):
         """calculate metafeatures using pymfe library"""
 
         # calculate meta features
-        X, imputed_X, y = self.impute(X, y, cat_mask)
 
         self.pymfe.fit(X, y, precomp_groups = None)
         self.pymfe_lm.fit(imputed_X, y, precomp_groups=None)

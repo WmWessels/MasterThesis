@@ -39,9 +39,39 @@ def main() -> None:
     indexes = list(map(int, pd.read_csv(f"utils/{task}_indexes.csv", index_col = 0).values[:, 0]))
     if task == "clf":
         features_lm = ["best_node", "linear_discr", "naive_bayes", "random_node", "worst_node"]
-    counter = 0
+    counter = 70
+    indexes = [42689,
+ 42702,
+ 42703,
+ 42399,
+ 42401,
+ 919,
+ 924,
+ 42813,
+ 44128,
+ 44131,
+ 530,
+ 42547,
+ 42575,
+ 4133,
+ 4102,
+ 8,
+ 210,
+ 232,
+ 279,
+ 1456,
+ 1242,
+ 42347,
+ 4538,
+ 40910,
+ 40916,
+ 914,
+ 1092]
     for index_batch in batch(indexes, 20):
         meta_features = []
+        if counter < 57:
+            counter += 1
+            continue
         for ind in index_batch:
             try:
                 dataset = openml.datasets.get_dataset(ind, download_qualities = False)
