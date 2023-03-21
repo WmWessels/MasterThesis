@@ -25,7 +25,7 @@ class ClassificationExtractor:
 
         with open("utils/metafeatures.json", "r") as file:
             file_content = json.load(file)
-        self.metafeatures = {k: None for k in file_content["classification"]}
+        self.metafeatures = {k: None for k in file_content["clf"]}
 
         with open("utils/func_reference.json", "r") as file:
             function_dict = json.load(file)
@@ -71,8 +71,8 @@ class ClassificationExtractor:
             except:
                 self.metafeatures[feature] = np.nan
             
-    @classmethod    
-    def impute(cls, X: np.array, y: np.array, cat_mask: List[bool]):
+    @staticmethod 
+    def impute(X: np.array, y: np.array, cat_mask: List[bool]):
 
         num_mask = [not elem for elem in cat_mask]
 

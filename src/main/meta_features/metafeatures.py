@@ -35,43 +35,14 @@ def main() -> None:
     with open("utils/metafeatures.json", "r") as file:
         file_content = json.load(file)
     features = file_content[f"pymfe_{task}"]
-    frame_columns = file_content["classification"]
+    frame_columns = file_content[f"{task}"]
     indexes = list(map(int, pd.read_csv(f"utils/{task}_indexes.csv", index_col = 0).values[:, 0]))
     if task == "clf":
         features_lm = ["best_node", "linear_discr", "naive_bayes", "random_node", "worst_node"]
-    counter = 70
-    indexes = [42689,
- 42702,
- 42703,
- 42399,
- 42401,
- 919,
- 924,
- 42813,
- 44128,
- 44131,
- 530,
- 42547,
- 42575,
- 4133,
- 4102,
- 8,
- 210,
- 232,
- 279,
- 1456,
- 1242,
- 42347,
- 4538,
- 40910,
- 40916,
- 914,
- 1092]
+    counter = 0
+ 
     for index_batch in batch(indexes, 20):
         meta_features = []
-        if counter < 57:
-            counter += 1
-            continue
         for ind in index_batch:
             try:
                 dataset = openml.datasets.get_dataset(ind, download_qualities = False)
@@ -80,9 +51,9 @@ def main() -> None:
                     X = X.toarray()
                 mfe = MFE(features = features, summary = ["nanmean", "nansd"])
                 mfe_lm = MFE(features = features_lm, groups = ["landmarking"], summary = ["nanmean", "nansd"], num_cv_folds = 5, lm_sample_frac = 0.5, suppress_warnings=True)
-
-                custom_extractor = ClassificationMetaFeatures(MFEInfoTheory())
-                general_extractor = GenericMetaFeatures(MFEInfoTheory())
+                mfe_info = MFEInfoTheory()
+                custom_extractor = ClassificationMetaFeatures(mfe_info)
+                general_extractor = GenericMetaFeatures(mfe_info)
                 extractor = ClassificationExtractor(mfe, mfe_lm, custom_extractor, general_extractor)
                 mf = extractor.retrieve(X, y, cat_mask)
                 meta_features.append(mf)

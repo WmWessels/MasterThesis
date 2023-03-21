@@ -20,7 +20,7 @@ class RegressionExtractor:
 
         with open("../metafeatures.json", "r") as file:
             file_content = json.load(file)
-        self.metafeatures = {k: None for k in file_content["regression"]}
+        self.metafeatures = {k: None for k in file_content["regr"]}
 
         with open("../func_reference.json", "r") as file:
             function_dict = json.load(file)
@@ -92,42 +92,3 @@ class RegressionExtractor:
         for feature, value in self.metafeatures.items():
             if value is None:
                 self.metafeatures[feature] = "imputed"
-
-
-# if __name__ == "__main__":
-
-    
-#     mfe = MFE(features = features, groups = ["general", "statistical", "info-theory"], summary = ["nanmean", "nansd"])
-    
-#     regression_sets = openml.tasks.list_tasks(task_type= openml.tasks.TaskType.SUPERVISED_REGRESSION, output_format="dataframe")
-#     regression_sets["size"] = regression_sets["NumberOfInstances"] * regression_sets["NumberOfFeatures"]
-#     small_indexes = set(regression_sets.query("NumberOfInstances < 20").groupby('did').first().index)
-#     large_indexes = set(regression_sets.query("NumberOfInstances > 500_000 or NumberOfFeatures > 2500 or size > 10_000_000").groupby('did').first().index)
-#     indexes_to_filter = small_indexes.union(large_indexes)
-#     indexes = list(map(int, set(regression_sets['did'].unique()).difference(indexes_to_filter)))
-#     counter = 0
-#     def batch(iterable , batch_size: int):
-#         for i in range(0, len(iterable), batch_size):
-#             yield iterable[i: i + batch_size]
-#     for index_ in batch(indexes, 20):
-
-#         meta_features = []
-#         for ind in index_:
-#             try:
-#                 regr = RegressionMetaFeatures(LandmarkingRegressor())
-#                 gen = GenericMetaFeatures(MFEInfoTheory())
-
-#                 extractor = RegressionExtractor(mfe, regr, gen)
-#                 dataset = openml.datasets.get_dataset(ind)
-#                 X, y, cat_mask, _ = dataset.get_data(dataset_format="array", target = dataset.default_target_attribute)
-#                 if type(X) == scipy.sparse._csr.csr_matrix:
-#                     X = X.toarray()
-#                 mf = extractor.retrieve(X, y, cat_mask)
-#                 meta_features.append(mf)
-#             except Exception as e:
-#                 print(e)
-#                 meta_features.append({k: np.nan for k in extractor.metafeatures.keys()})
-    
-#         pd.DataFrame(index = index_, data = meta_features).to_csv(f"../data/regression/meta_features_{counter}.csv")
-#         counter += 1
-    

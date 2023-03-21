@@ -1,5 +1,5 @@
 {
-    "classification": [
+    "clf": [
         "freq_class.nanmean",
         "freq_class.nansd",
         "nr_class",
@@ -55,7 +55,7 @@
         "missing.nanmean",
         "missing.nansd"
     ],
-    "regression": [
+    "regr": [
         "kurtosis_targ",
         "skewness_targ",
         "std_targ",
