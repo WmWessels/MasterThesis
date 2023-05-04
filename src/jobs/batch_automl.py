@@ -22,12 +22,18 @@ import sklearn
 # rmse = scoring_to_metric("neg_root_mean_squared_error")
 # print(rmse)
 
+def force_get_dataset(dataset_id=None, *args, **kwargs):
+    """ Remove any existing local files about `dataset_id` and then download new copies. """
+    did_cache_dir = openml.utils._create_cache_directory_for_id(openml.datasets.functions.DATASETS_CACHE_DIR_NAME, dataset_id, )
+    openml.utils._remove_cache_dir_for_id(openml.datasets.functions.DATASETS_CACHE_DIR_NAME, did_cache_dir)
+    return openml.datasets.get_dataset(dataset_id, *args, **kwargs)
+
 class AutomlExecutor:
     
-    def run_automl(self, dataset_id: Union[int, str], max_total_time: Optional[int] = 3600, store: Optional[str] = "logs", evaluation_metric = "roc_auc"):
-        output_directory = "src/logs/binary/gama_" + str(dataset_id) + "/"
+    def run_automl(self, dataset_id: Union[int, str], max_total_time: Optional[int] = 3600, store: Optional[str] = "logs", evaluation_metric = "neg_log_loss"):
+        output_directory = "src/logs/multiclass/gama_" + str(dataset_id) + "/"
         gama_instance = GamaClassifier(max_total_time = max_total_time, store = store, output_directory = output_directory, scoring = evaluation_metric)
-        dataset = openml.datasets.get_dataset(dataset_id)
+        dataset = force_get_dataset(dataset_id)
         X, y, _, _ = dataset.get_data(dataset_format="dataframe", target = dataset.default_target_attribute)
         y = pd.Series(y)
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
@@ -79,7 +85,7 @@ class AutomlExecutor:
         return batch_scores
 
 def main():
-    binary_ids = pd.read_csv("src/jobs/binary_names.csv").iloc[:, 0].values
+    binary_ids = pd.read_csv("src/jobs/multiclass_names.csv").iloc[:, 0].values
     automl_executor = AutomlExecutor()
     batch_results = automl_executor.run_batch(binary_ids, store_to_file = True)
     print(batch_results)
