@@ -16,11 +16,6 @@ from gama.utilities.metrics import scoring_to_metric
 from functools import partial
 
 random.seed(0)
-import sklearn
-
-
-# rmse = scoring_to_metric("neg_root_mean_squared_error")
-# print(rmse)
 
 def force_get_dataset(dataset_id=None, *args, **kwargs):
     """ Remove any existing local files about `dataset_id` and then download new copies. """
@@ -30,8 +25,8 @@ def force_get_dataset(dataset_id=None, *args, **kwargs):
 
 class AutomlExecutor:
     
-    def run_automl(self, dataset_id: Union[int, str], max_total_time: Optional[int] = 3600, store: Optional[str] = "logs", evaluation_metric = "neg_log_loss"):
-        output_directory = "src/logs/multiclass/gama_" + str(dataset_id) + "/"
+    def run_automl(self, dataset_id: Union[int, str], max_total_time: Optional[int] = 3600, store: Optional[str] = "logs", evaluation_metric = "neg_root_mean_squared_error"):
+        output_directory = "src/logs/regression/gama_" + str(dataset_id) + "/"
         gama_instance = GamaClassifier(max_total_time = max_total_time, store = store, output_directory = output_directory, scoring = evaluation_metric)
         dataset = force_get_dataset(dataset_id)
         X, y, _, _ = dataset.get_data(dataset_format="dataframe", target = dataset.default_target_attribute)
@@ -85,7 +80,7 @@ class AutomlExecutor:
         return batch_scores
 
 def main():
-    binary_ids = pd.read_csv("src/jobs/multiclass_names.csv").iloc[:, 0].values
+    binary_ids = pd.read_csv("src/jobs/regr_names.csv").iloc[:, 0].values
     automl_executor = AutomlExecutor()
     batch_results = automl_executor.run_batch(binary_ids, store_to_file = True)
     print(batch_results)
