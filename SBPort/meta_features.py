@@ -463,7 +463,7 @@ class RegressionMetaFeatures(MetaFeatures):
         return {"sd_target": np.nanstd(self.y)}
     
     def _target_corr(self):
-        corr = self.dataframe.corrwith(self.y)
+        corr = self.dataframe.corrwith(pd.Series(self.y))
         return {"target_corr_mean": np.nanmean(corr), "target_corr_sd": np.nanstd(corr)}
     
     def _attr_entropy(self):
@@ -581,7 +581,7 @@ def class_methods(obj: Any,
 if __name__ == "__main__":
     import openml
 
-    dataset = openml.datasets.get_dataset(5)
+    dataset = openml.datasets.get_dataset(45066)
     n_jobs = 3
 
     X, y, categorical_indicator, attribute_names = dataset.get_data(
@@ -590,7 +590,7 @@ if __name__ == "__main__":
     )
     print(type(X))
     start_time = time.time()
-    metafeatures = ClassificationMetaFeatures(X, y,  n_jobs = n_jobs, categorical_indicator = np.array(categorical_indicator))
+    metafeatures = RegressionMetaFeatures(X, y,  n_jobs = n_jobs, categorical_indicator = np.array(categorical_indicator))
     metafeatures.fit()
     mf = metafeatures.retrieve()
     print(mf)

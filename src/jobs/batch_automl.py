@@ -27,7 +27,7 @@ class AutomlExecutor:
     
     def run_automl(self, dataset_id: Union[int, str], max_total_time: Optional[int] = 3600, store: Optional[str] = "logs", evaluation_metric = "neg_root_mean_squared_error"):
         output_directory = "src/logs/regression/gama_" + str(dataset_id) + "/"
-        gama_instance = GamaClassifier(max_total_time = max_total_time, store = store, output_directory = output_directory, scoring = evaluation_metric)
+        gama_instance = GamaRegressor(max_total_time = max_total_time, store = store, output_directory = output_directory, scoring = evaluation_metric)
         dataset = force_get_dataset(dataset_id)
         X, y, _, _ = dataset.get_data(dataset_format="dataframe", target = dataset.default_target_attribute)
         y = pd.Series(y)
