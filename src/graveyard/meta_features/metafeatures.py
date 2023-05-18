@@ -48,7 +48,7 @@ def main() -> None:
                 dataset = openml.datasets.get_dataset(ind, download_qualities = False)
                 X, y, cat_mask, _ = dataset.get_data(target=dataset.default_target_attribute, dataset_format='array')
                 if type(X) == scipy.sparse._csr.csr_matrix:
-                    X = X.toarray()
+                    X = X.to
                 mfe = MFE(features = features, summary = ["nanmean", "nansd"])
                 mfe_lm = MFE(features = features_lm, groups = ["landmarking"], summary = ["nanmean", "nansd"], num_cv_folds = 5, lm_sample_frac = 0.5, suppress_warnings=True)
                 mfe_info = MFEInfoTheory()
