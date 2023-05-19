@@ -581,7 +581,7 @@ def class_methods(obj: Any,
 if __name__ == "__main__":
     import openml
 
-    dataset = openml.datasets.get_dataset(45066)
+    dataset = openml.datasets.get_dataset(2)
     n_jobs = 3
 
     X, y, categorical_indicator, attribute_names = dataset.get_data(
@@ -590,7 +590,7 @@ if __name__ == "__main__":
     )
     print(type(X))
     start_time = time.time()
-    metafeatures = RegressionMetaFeatures(X, y,  n_jobs = n_jobs, categorical_indicator = np.array(categorical_indicator))
+    metafeatures = ClassificationMetaFeatures(X, y,  n_jobs = n_jobs, categorical_indicator = np.array(categorical_indicator))
     metafeatures.fit()
     mf = metafeatures.retrieve()
     print(mf)
