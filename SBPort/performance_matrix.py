@@ -10,7 +10,7 @@ import random
 import multiprocessing  
 import functools
 import time
-from joblib import Parallel, delayed
+
 from gama.utilities.preprocessing import select_categorical_columns, basic_encoding
 
 from sklearn.base import TransformerMixin
@@ -72,6 +72,8 @@ def run_pipelines(pipelines, datasets, scoring, cv: Optional[int] = 10, is_class
         total_scores.append(dataset_scores)
 
     return total_scores
+
+
 
 
 
