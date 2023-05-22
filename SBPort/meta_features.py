@@ -282,12 +282,16 @@ class MetaFeatures:
 
 class ClassificationMetaFeatures(MetaFeatures):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, is_binary = True, **kwargs):
         super().__init__(*args, **kwargs)
         self.score: Optional[callable] = accuracy_score
+        self.is_binary = is_binary
 
     def fit(self):
         self._retrieval_funcs = class_methods(self)
+        if self.is_binary:
+            self._retrieval_funcs.remove(self._nr_class) 
+            self._retrieval_funcs.remove(self._freq_class)
 
     def _nr_class(self):
         return {"nr_class": len(np.unique(self.y))}
