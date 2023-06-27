@@ -93,7 +93,7 @@ def timeout_handler(signum, frame):
 signal.signal(signal.SIGALRM, timeout_handler)
 
 class SBPort:
-    
+
     @staticmethod
     def calculate_metafeatures(
         X: pd.DataFrame, 
@@ -185,22 +185,3 @@ class SBPort:
         scores = self.evaluate_sklearn_pipelines(X, y, pipelines, "roc_auc")
         return scores
 
-if __name__ == "__main__":
-    logging.basicConfig(level = logging.INFO)
-    sbport = SBPort()
-    task = Task.BINARY
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument("--experiment", type = str, choices = ["grid_search", "1NN", "static", ""])
-    CLUSTER_SIZES = [3, 5, 8]
-    PORTFOLIO_SIZES = [4, 8, 16]
-    for cluster_size in CLUSTER_SIZES:
-        inference_pipeline_path = Path(__file__).parent / "inference_pipelines" / "bin" / f"inference_pipeline_{task.value}_kernel_kmeans_{cluster_size}_psize_{max(PORTFOLIO_SIZES)}"
-
-        if task == Task.BINARY:
-            sbport.run(
-                dataset_id = 31,
-                extractor = bin_kwargs["extractor"],
-                numerical_features_with_outliers = bin_kwargs["numerical_features_with_outliers"],
-                inference_pipeline_path = inference_pipeline_path,
-                **bin_kwargs["fit_kwargs"]
-            )
