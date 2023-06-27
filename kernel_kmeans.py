@@ -4,14 +4,10 @@
 # License: BSD 3 clause
 
 import numpy as np
-import pandas as pd
 
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.metrics.pairwise import pairwise_kernels
 from sklearn.utils import check_random_state
-
-from sklearn.cluster import OPTICS
-from scipy.spatial.distance import cdist
 
 
 class KernelKMeans(BaseEstimator, ClusterMixin):
@@ -117,22 +113,3 @@ class KernelKMeans(BaseEstimator, ClusterMixin):
         self._compute_dist(K, dist, self.within_distances_,
                            update_within=False)
         return dist.argmin(axis=1)
-
-class MetaOPTICS(OPTICS):
-    
-    def __init__(self, mf_dataframe: pd.DataFrame, eps, min_samples, metric, n_jobs):
-        super().__init__(eps = eps, min_samples = min_samples, metric = metric, n_jobs = n_jobs)
-        self.mf_dataframe = mf_dataframe
-    
-    def predict(self, new_data_point: pd.DataFrame, y = None):
-        threshold = 0.8
-        distances = np.linalg.norm(self.mf_dataframe - new_data_point[0], axis=1)
-        #smaller than threshold
-        mask = np.where(distances < threshold)
-        if len(mask[0]) == 0:
-            return -1
-        index_to_select = np.argmin(distances[mask])
-        return [self.labels_[index_to_select]]
-
-
-

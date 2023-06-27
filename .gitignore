@@ -133,3 +133,7 @@ dmypy.json
 # custom
 logs/
 data/
+hpc_files/
+hpc_output/
+*.png
+*.pdf

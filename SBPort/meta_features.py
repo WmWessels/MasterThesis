@@ -2,7 +2,12 @@ import concurrent.futures
 import numpy as np
 import pandas as pd
 import scipy
-import time
+from pathlib import Path
+import json
+import openml
+import argparse
+import multiprocessing
+from joblib import Parallel, delayed
 
 from typing import Optional, Any
 from itertools import permutations
@@ -14,7 +19,29 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import accuracy_score, r2_score
 
-from utils import impute
+from utils import impute, handling_error
+
+N_JOBS = multiprocessing.cpu_count()
+
+bin_kwargs = {
+    "is_clf": True,
+    "is_binary": True,
+    "training": True
+}
+
+multi_kwargs = {
+    "is_clf": True,
+    "is_binary": False,
+    "training": True
+}
+
+regr_kwargs = {
+    "is_clf": False,
+    "is_binary": False,
+    "training": True
+}
+
+RANDOM_STATE = 42
 
 class MetaFeatures:
     
@@ -22,9 +49,11 @@ class MetaFeatures:
             self,
              X, 
              y,
-             is_clf: bool = True,
+             is_clf: bool,
+             is_binary: bool,
              n_jobs: Optional[int] = None,
-             categorical_indicator: Optional[list] = None
+             categorical_indicator: Optional[list] = None,
+             training = False
         ):
         if type(X) == pd.DataFrame:
             self.dataframe = X
@@ -35,10 +64,26 @@ class MetaFeatures:
         else:
             raise TypeError("X should be a pandas dataframe or numpy array")
         self.y = np.array(y)
+        if not n_jobs:
+            self._njobs = N_JOBS
         self._njobs = n_jobs
         self.is_clf = is_clf
+        self.is_binary = is_binary
         self.categorical_indicator = categorical_indicator
-        self.meta_features = {}
+
+        with open("_features.json", "r") as f:
+            meta_features = json.load(f)
+        
+        if not self.is_clf:
+            self.meta_features = meta_features["meta_features_regr"]
+        elif self.is_binary:
+            self.meta_features = meta_features["meta_features_bin"]
+        else:
+            self.meta_features = meta_features["meta_features_multi"]
+
+        self.meta_features = {feature: np.nan for feature,_ in self.meta_features.items()}
+        
+        
         self.__post_init__()
         
     def __post_init__(self):
@@ -53,7 +98,7 @@ class MetaFeatures:
         self.skf, self.attr_folds = self.cv_folds()
     
     def retrieve(self):
-        # Calculate generic meta features
+
         if not self._retrieval_funcs:
             raise ValueError(
                 """
@@ -62,26 +107,42 @@ class MetaFeatures:
                 """
             )
 
-        with concurrent.futures.ProcessPoolExecutor(self._njobs) as executor:
-            futures = [executor.submit(calculate_feature) for calculate_feature in self._retrieval_funcs]
-            for future in concurrent.futures.as_completed(futures):
-                result = future.result()
+        # with concurrent.futures.ProcessPoolExecutor(self._njobs) as executor:
+        #     futures = [executor.submit(calculate_feature) for calculate_feature in self._retrieval_funcs]
+        #     for future in concurrent.futures.as_completed(futures):
+        #         try:
+        #             result = future.result()
+        #             if result is not None:
+        #                 self.meta_features.update(result)
+        #         except concurrent.futures.process.BrokenProcessPool:
+        #             print(future)
+        #             continue
+        results = Parallel(n_jobs = self._njobs)(delayed(calculate_feature)() for calculate_feature in self._retrieval_funcs)
+                # result = future.result()
+        for result in results:
+            if result is not None:
                 self.meta_features.update(result)
+        #assert that all meta featurse have a value
+        for key in self.meta_features.keys():
+            assert self.meta_features[key] is not None, f"Missing value for {key}"
 
         return self.meta_features
     
+    @handling_error
     def _missing_values(self):
         missing_per_column = self.dataframe.isnull().sum()/self.dataframe.shape[0]
         # missing_per_column = np.count_nonzero(np.isnan(self.X), axis = 0)/self.X.shape[0]
         return {"missing_mean": np.nanmean(missing_per_column), "missing_sd": np.nanstd(missing_per_column)}
 
+    @handling_error
     def _shape_attrs(self):
         shape = self.X.shape
         nr_feat = shape[1]
         nr_inst = shape[0]
         attr_to_inst_ratio = nr_feat / nr_inst
         return {"nr_feat": nr_feat, "nr_inst": nr_inst, "attr_to_inst_ratio": attr_to_inst_ratio}
-
+        
+    @handling_error
     def _nr_bin(self):
         """
         From pymfe
@@ -92,69 +153,70 @@ class MetaFeatures:
 
         return {"nr_bin": np.sum(bin_cols)}
     
+    @handling_error
     def _column_types(self):
         cat_types = self.C.shape[1]
         num_types = self.N.shape[1]
         num_to_cat_ratio = 0 if cat_types == 0 else num_types / cat_types
         return {"nr_cat": cat_types, "nr_num": num_types, "num_to_cat_ratio": num_to_cat_ratio}
 
-    
+    @handling_error
     def _interquartile_range(self):
         iqr = scipy.stats.iqr(self.N, axis = 0, nan_policy = "omit")
         return {"iqr_mean": np.nanmean(iqr), "iqr_sd": np.nanstd(iqr)}
 
-    
+    @handling_error
     def _correlation(self):
-        cor = self.dataframe.corr().values.astype(float)
+        cor = self.dataframe.corr(numeric_only=True).values.astype(float)
         return {"cor_mean": np.nanmean(cor), "cor_sd": np.nanstd(cor)}
 
-    
+    @handling_error
     def _covariance(self):
         cov = self.dataframe.cov().values.astype(float)
         return {"cov_mean": np.nanmean(cov), "cov_sd": np.nanstd(cov)}
 
-    
+    @handling_error
     def _kurtosis(self):
         kurtosis = self.dataframe.kurtosis().values.astype(float)
         return {"kurtosis_mean": np.nanmean(kurtosis), "kurtosis_sd": np.nanstd(kurtosis)}
     
-    
+    @handling_error
     def _max_stats(self):
         max_ = self.dataframe.max().values.astype(float)
 
         return {"max_mean": np.nanmean(max_), "max_sd": np.nanstd(max_)}
 
-    
+    @handling_error
     def _mean_stats(self):
         mean_ = self.dataframe.mean().values.astype(float)
         return {"mean_mean": np.nanmean(mean_), "mean_sd": np.nanstd(mean_)}
 
-    
+    @handling_error
     def _median_stats(self):
         median_ = self.dataframe.median().values.astype(float)
         return {"median_mean": np.nanmean(median_), "median_sd": np.nanstd(median_)}
 
-    
+    @handling_error
     def _min_stats(self):
         min_ = self.dataframe.min().values.astype(float)
         return {"min_mean": np.nanmean(min_), "min_sd": np.nanstd(min_)}
 
-    
+    @handling_error
     def _sd_stats(self):
         sd = self.dataframe.std().values.astype(float)
         return {"sd_mean": np.nanmean(sd), "sd_sd": np.nanstd(sd)}
 
-    
+    @handling_error
     def _skewness_stats(self):
         skewness = self.dataframe.skew().values.astype(float)
         return {"skewness_mean": np.nanmean(skewness), "skewness_sd": np.nanstd(skewness)}
 
-    
+    @handling_error
     def _variance_stats(self):
         variance = self.dataframe.var().values.astype(float)
         return {"variance_mean": np.nanmean(variance), "variance_sd": np.nanstd(variance)}
 
-    
+    @handling_error
     def _outliers(self, whis: float = 1.5):
 
         v_min, q_1, q_3, v_max = np.percentile(self.N, (0, 25, 75, 100), axis=0)
@@ -165,37 +227,6 @@ class MetaFeatures:
         cut_high = q_3 + whis_iqr
 
         return {"outliers": np.sum(np.logical_or(cut_low > v_min, cut_high < v_max))}
-    
-    
-    def _attr_concentration(
-        self, 
-        max_attr_num: Optional[int] = 12,
-        random_state: Optional[int] = None,
-    ) -> np.array:
-        if not np.any(self.C):
-            return {"attr_conc_mean": np.nan, "attr_conc_sd": np.nan}
-        _, num_col = self.C.shape
-
-        col_inds = np.arange(num_col)
-
-        if max_attr_num is not None and num_col > max_attr_num:
-            if random_state is not None:
-                np.random.seed(random_state)
-
-            col_inds = np.random.choice(
-                col_inds, size=max_attr_num, replace=False
-            )
-
-        col_permutations = permutations(col_inds, 2)
-
-        attr_conc = np.array(
-            [
-                self.calc_conc(self.C[:, ind_attr_a], self.C[:, ind_attr_b])
-                for ind_attr_a, ind_attr_b in col_permutations
-            ]
-        )
-
-        return {"attr_conc_mean": np.nanmean(attr_conc), "attr_conc_sd": np.nanstd(attr_conc)}
 
     def attr_entropy(self):
         return np.apply_along_axis(func1d=self.calc_entropy, axis=0, arr=self.C)
@@ -231,6 +262,8 @@ class MetaFeatures:
             lm_sample_frac: float = 0.5,
     ) -> np.array:
 
+        np.random.seed(RANDOM_STATE)
+
         ind = np.random.choice(
             a=num_inst, 
             size=int(lm_sample_frac * num_inst), 
@@ -239,23 +272,31 @@ class MetaFeatures:
 
         return ind
     
+    
     def cv_folds(
         self,
         n_splits: Optional[int] = 10
     ):
+        if self.imputed_N is None or self.imputed_N.size == 0:
+            return None, None
         if self.is_clf:
             skf = StratifiedKFold(
-                n_splits=n_splits
+                n_splits=n_splits,
+                shuffle = True,
+                random_state = RANDOM_STATE
             )
         else:
             skf = KFold(
-                n_splits=n_splits
+                n_splits=n_splits,
+                shuffle = True,
+                random_state = RANDOM_STATE
             )
         
         attr_folds = []
         for inds_train, inds_test in skf.split(self.imputed_N[self.landmarking_samples, :], self.y[self.landmarking_samples]):
             clf = DecisionTreeRegressor(
-            ).fit(self.imputed_N[inds_train, :], y[inds_train])
+                random_state = RANDOM_STATE
+            ).fit(self.imputed_N[inds_train, :], self.y[inds_train])
 
             attr_folds.append(np.argsort(clf.feature_importances_))
 
@@ -279,42 +320,66 @@ class MetaFeatures:
 
         return -1.0 * joint_ent
     
+    @handling_error
+    def _attr_concentration(
+        self, 
+        max_attr_num: Optional[int] = 12
+    ) -> np.array:
+
+        _, num_col = self.C.shape
+
+        col_inds = np.arange(num_col)
+
+        if max_attr_num is not None and num_col > max_attr_num:
+            np.random.seed(RANDOM_STATE)
+
+            col_inds = np.random.choice(
+                col_inds, size=max_attr_num, replace=False
+            )
+
+        col_permutations = permutations(col_inds, 2)
+
+        attr_conc = np.array(
+            [
+                self.calc_conc(self.C[:, ind_attr_a], self.C[:, ind_attr_b])
+                for ind_attr_a, ind_attr_b in col_permutations
+            ]
+        )
+
+        return {"attr_conc_mean": np.nanmean(attr_conc), "attr_conc_sd": np.nanstd(attr_conc)}
+    
 
 class ClassificationMetaFeatures(MetaFeatures):
 
-    def __init__(self, *args, is_binary = True, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args, is_binary = True, is_clf = True, **kwargs):
+        super().__init__(*args, is_binary = is_binary, is_clf = is_clf, **kwargs)
         self.score: Optional[callable] = accuracy_score
         self.is_binary = is_binary
 
     def fit(self):
         self._retrieval_funcs = class_methods(self)
+
+    # def _nr_class(self):
+    #     return {"nr_class": len(np.unique(self.y))}
+
+    def _class_ftrs(self):
+        labels, counts = np.unique(self.y, return_counts=True)
         if self.is_binary:
-            self._retrieval_funcs.remove(self._nr_class) 
-            self._retrieval_funcs.remove(self._freq_class)
+            return {"majority_class_size": np.max(counts)/self.y.size, "minority_class_size": np.min(counts)/self.y.size}
+        else:
+            return {"majority_class_size": np.max(counts)/self.y.size, "minority_class_size": np.min(counts)/self.y.size, "nr_class": len(labels)}
 
-    def _nr_class(self):
-        return {"nr_class": len(np.unique(self.y))}
-
-    def _freq_class(self):
-        _, counts = np.unique(self.y, return_counts=True)
-        freq = counts / self.y.size
-        return {"class_freq_mean": np.nanmean(freq), "class_freq_sd": np.nanstd(freq)}
-
+    @handling_error
     def _class_conc(self):
-        if not np.any(self.C):
-            return {"class_conc_mean": np.nan, "class_conc_sd": np.nan}
-        
+       
         class_conc = np.apply_along_axis(
             func1d=self.calc_conc, axis=0, arr=self.C, vec_y=self.y
         )
         # class_conc = MFEInfoTheory.ft_class_conc(self.C, self.y)
         return {"class_conc_mean": np.nanmean(class_conc), "class_conc_sd": np.nanstd(class_conc)}
     
-    
+    @handling_error
     def _entropy_attrs(self):
-        if not np.any(self.C):
-            return {"attr_ent_mean": np.nan, "attr_ent_sd": np.nan, "eq_num_attr_mean": np.nan}
     
         class_ent = self.calc_entropy(self.y)
     
@@ -332,18 +397,17 @@ class ClassificationMetaFeatures(MetaFeatures):
 
         return {"attr_ent_mean": np.nanmean(attr_ent), "attr_ent_sd": np.nanstd(attr_ent), "eq_num_attr": eq_num_attr}
     
-    
+    @handling_error
     def _joint_ent(self):
-        if not np.any(self.C):
-            return {"joint_ent_mean": np.nan, "joint_ent_sd": np.nan}
         joint_ent = MFEInfoTheory.ft_joint_ent(self.C, self.y)
         return {"joint_ent_mean": np.nanmean(joint_ent), "joint_ent_sd": np.nanstd(joint_ent)}
 
-    
+    @handling_error
     def _best_node(self):
         
         model = DecisionTreeClassifier(
-            max_depth=1
+            max_depth=1,
+            random_state = RANDOM_STATE
         )
 
         res = np.zeros(self.skf.n_splits, dtype=float)
@@ -359,8 +423,9 @@ class ClassificationMetaFeatures(MetaFeatures):
             y_pred = model.predict(X_test)
             res[ind_fold] = self.score(y_test, y_pred)
 
-        return {"best_node_mean": np.nanmean(res), "best_node_sd": np.nanstd(res)}
+        return {"best_node_mean": np.nanmean(res)}
 
+    @handling_error
     def _linear_discr(self):
 
         model = LinearDiscriminantAnalysis()
@@ -377,9 +442,9 @@ class ClassificationMetaFeatures(MetaFeatures):
             y_pred = model.predict(X_test)
             res[ind_fold] = self.score(y_test, y_pred)
 
-        return {"linear_discr_mean": np.nanmean(res), "linear_discr_sd": np.nanstd(res)}
+        return {"linear_discr_mean": np.nanmean(res)}
 
-    
+    @handling_error
     def _naive_bayes(self):
 
         model = GaussianNB()
@@ -397,13 +462,14 @@ class ClassificationMetaFeatures(MetaFeatures):
             y_pred = model.predict(X_test)
             res[ind_fold] = self.score(y_test, y_pred)
 
-        return {"naive_bayes_mean": np.nanmean(res), "naive_bayes_sd": np.nanstd(res)}
+        return {"naive_bayes_mean": np.nanmean(res)}
 
-    
+    @handling_error
     def _random_node(self):
 
         model =DecisionTreeClassifier(
-            max_depth=1
+            max_depth=1,
+            random_state = RANDOM_STATE
         )
 
         N, y = self.imputed_N[self.landmarking_samples, :], self.y[self.landmarking_samples]
@@ -421,13 +487,14 @@ class ClassificationMetaFeatures(MetaFeatures):
             y_pred = model.predict(X_test)
             res[ind_fold] = self.score(y_test, y_pred)
 
-        return {"random_node_mean": np.nanmean(res), "random_node_sd": np.nanstd(res)}
+        return {"random_node_mean": np.nanmean(res)}
 
-    
+    @handling_error
     def _worst_node(self):
 
         model = DecisionTreeClassifier(
-            max_depth=1
+            max_depth=1,
+            random_state = RANDOM_STATE
         )
 
         res = np.zeros(self.skf.n_splits, dtype=float)
@@ -444,7 +511,7 @@ class ClassificationMetaFeatures(MetaFeatures):
             y_pred = model.predict(X_test)
             res[ind_fold] = self.score(y_test, y_pred)
 
-        return {"worst_node_mean": np.nanmean(res), "worst_node_sd": np.nanstd(res)}
+        return {"worst_node_mean": np.nanmean(res)}
 
     
 class RegressionMetaFeatures(MetaFeatures):
@@ -456,30 +523,36 @@ class RegressionMetaFeatures(MetaFeatures):
     def fit(self):
         self._retrieval_funcs = class_methods(self)
 
+    @handling_error
     def _kurtosis_target(self):
         return {"kurtosis_target": scipy.stats.kurtosis(self.y)}
     
+    @handling_error
     def _skewness_target(self):
         return {"skewness_target": scipy.stats.skew(self.y)}
     
-
+    @handling_error
     def _sd_targ(self):
         return {"sd_target": np.nanstd(self.y)}
     
+    @handling_error
     def _target_corr(self):
         corr = self.dataframe.corrwith(pd.Series(self.y))
         return {"target_corr_mean": np.nanmean(corr), "target_corr_sd": np.nanstd(corr)}
     
+    @handling_error
     def _attr_entropy(self):
-        if not np.any(self.C):
-            return {"attr_entropy_mean": np.nan, "attr_entropy_sd": np.nan}
         attr_entropy = self.attr_entropy()
+        if attr_entropy.size == 0:
+            return None
         return {"attr_entropy_mean": np.nanmean(attr_entropy), "attr_entropy_sd": np.nanstd(attr_entropy)}
-    
+
+    @handling_error
     def _best_node(self):
         
         model = DecisionTreeRegressor(
-            max_depth=1
+            max_depth=1,
+            random_state = RANDOM_STATE
         )
 
         res = np.zeros(self.skf.n_splits, dtype=float)
@@ -495,12 +568,15 @@ class RegressionMetaFeatures(MetaFeatures):
             y_pred = model.predict(X_test)
             res[ind_fold] = self.score(y_test, y_pred)
 
-        return {"best_node_mean": np.nanmean(res), "best_node_sd": np.nanstd(res)}
+        return {"best_node_mean": np.nanmean(res)}
 
-
+    @handling_error
     def _random_node(self):
 
-        model =DecisionTreeRegressor(max_depth=1)
+        model = DecisionTreeRegressor(
+            max_depth=1,
+            random_state=RANDOM_STATE
+        )
 
         N, y = self.imputed_N[self.landmarking_samples, :], self.y[self.landmarking_samples]
 
@@ -517,12 +593,15 @@ class RegressionMetaFeatures(MetaFeatures):
             y_pred = model.predict(X_test)
             res[ind_fold] = self.score(y_test, y_pred)
 
-        return {"random_node_mean": np.nanmean(res), "random_node_sd": np.nanstd(res)}
+        return {"random_node_mean": np.nanmean(res)}
 
-    
+    @handling_error
     def _worst_node(self):
 
-        model = DecisionTreeRegressor(max_depth=1)
+        model = DecisionTreeRegressor(
+            max_depth=1,
+            random_state=RANDOM_STATE
+        )
 
         res = np.zeros(self.skf.n_splits, dtype=float)
 
@@ -538,8 +617,9 @@ class RegressionMetaFeatures(MetaFeatures):
             y_pred = model.predict(X_test)
             res[ind_fold] = self.score(y_test, y_pred)
 
-        return {"worst_node_mean": np.nanmean(res), "worst_node_sd": np.nanstd(res)}
-    
+        return {"worst_node_mean": np.nanmean(res)}
+
+    @handling_error
     def _linear_regr(self):
         model = LinearRegression()
 
@@ -555,8 +635,9 @@ class RegressionMetaFeatures(MetaFeatures):
             y_pred = model.predict(X_test)
             res[ind_fold] = self.score(y_test, y_pred)
 
-        return {"linear_regr_mean": np.nanmean(res), "linear_regr_sd": np.nanstd(res)}
-    
+        return {"linear_regr_mean": np.nanmean(res)}
+
+    @handling_error
     def _bayesian_ridge(self):
         model = BayesianRidge()
 
@@ -573,29 +654,86 @@ class RegressionMetaFeatures(MetaFeatures):
             y_pred = model.predict(X_test)
             res[ind_fold] = self.score(y_test, y_pred)
 
-        return {"bayesian_ridge_mean": np.nanmean(res), "bayesian_ridge_sd": np.nanstd(res)}
+        return {"bayesian_ridge_mean": np.nanmean(res)}
     
 def class_methods(obj: Any,
                   exclude_pattern: str = "__",
                   include_pattern: str = "_"
                  ) -> list[callable]:
+    """
+    All class methods containing meta features are written as private methods. 
+    This function returns all private methods of a class.
+    """
 
     return [getattr(obj, method) for method in dir(obj) if callable(getattr(obj, method)) and not method.startswith(exclude_pattern) and method.startswith(include_pattern)]
 
-if __name__ == "__main__":
-    import openml
+def run(
+    dataset_id: int,
+    extractor: MetaFeatures,
+    **kwargs
+) -> pd.DataFrame:
 
-    dataset = openml.datasets.get_dataset(2)
-    n_jobs = 3
-
-    X, y, categorical_indicator, attribute_names = dataset.get_data(
+    dataset = openml.datasets.get_dataset(dataset_id)
+    X, y, categorical_indicator, _ = dataset.get_data(
         dataset_format="array",
         target=dataset.default_target_attribute
     )
-    print(type(X))
-    start_time = time.time()
-    metafeatures = ClassificationMetaFeatures(X, y,  n_jobs = n_jobs, categorical_indicator = np.array(categorical_indicator))
-    metafeatures.fit()
-    mf = metafeatures.retrieve()
+    if type(X) == scipy.sparse.csr_matrix:
+        X = X.toarray()
+    mf_extractor = extractor(X, y, categorical_indicator = np.array(categorical_indicator), **kwargs)
+    
+    
+    mf_extractor.fit()
+    mf = mf_extractor.retrieve()
     print(mf)
-    print("--- %s seconds ---" % (time.time() - start_time))
+
+    return mf
+        
+def run_batch(
+    dataset_ids: list[int],
+    task_type: str,
+    extractor: MetaFeatures,
+    save: bool = True, 
+    **kwargs
+) -> list[dict[str, float]]:
+
+    metafeatures_list = []
+
+    for dataset_id in dataset_ids:
+        metafeatures = run(dataset_id, extractor, **kwargs)
+        metafeatures_list.append(metafeatures)
+        print(dataset_id, "finished")
+
+    metafeatures_dataframe = pd.DataFrame(metafeatures_list, index = dataset_ids)
+    if save:
+        metafeatures_dataframe.to_csv(f"training/raw_metafeatures/metafeatures_{task_type}.csv")
+    
+    return metafeatures_dataframe
+
+if __name__ == "__main__":
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument("--task_type", type = str, choices = ["bin", "multi", "regr"], required = True)
+    args = argparser.parse_args()
+    if args.task_type == "bin":
+        extractor = ClassificationMetaFeatures
+        kwargs = bin_kwargs.copy()
+    elif args.task_type == "multi":
+        extractor = ClassificationMetaFeatures
+        kwargs = multi_kwargs.copy()
+    elif args.task_type == "regr":
+        extractor = RegressionMetaFeatures
+        kwargs = regr_kwargs.copy()
+    
+    dataset_ids = pd.read_csv(Path(__file__).parent / "training" / "dataset_ids" / f"{args.task_type}_dids.csv")["did"].to_list()
+    run_batch(
+        dataset_ids = dataset_ids,
+        task_type = args.task_type,
+        extractor = extractor,
+        **kwargs
+    )
+
+
+
+
+
+

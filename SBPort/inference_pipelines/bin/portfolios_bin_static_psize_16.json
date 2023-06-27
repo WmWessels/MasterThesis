@@ -1,0 +1,18 @@
+[
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('2',SelectFwe(alpha=0.014)),('1',SelectFwe(alpha=0.01)),('0',ExtraTreesClassifier(bootstrap=True,criterion='entropy',max_features=0.6000000000000001,min_samples_split=18))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('1',PolynomialFeatures(include_bias=False)),('0',RandomForestClassifier(criterion='entropy',max_features=0.3,min_samples_leaf=7,min_samples_split=15))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('1',PolynomialFeatures(include_bias=False)),('0',RandomForestClassifier(bootstrap=False,criterion='entropy',max_features=0.2,min_samples_leaf=8))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('2',StandardScaler()),('1',PolynomialFeatures(include_bias=False)),('0',RandomForestClassifier(criterion='entropy',max_features=0.6000000000000001,min_samples_leaf=3,min_samples_split=10))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('1',PolynomialFeatures(include_bias=False)),('0',ExtraTreesClassifier(bootstrap=True,criterion='entropy',max_features=0.5,min_samples_split=16))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('1',PolynomialFeatures(include_bias=False)),('0',ExtraTreesClassifier(criterion='entropy',max_features=0.6000000000000001,min_samples_leaf=11,min_samples_split=15))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('1',PolynomialFeatures(include_bias=False)),('0',RandomForestClassifier(bootstrap=False,criterion='entropy',max_features=0.2,min_samples_leaf=8,min_samples_split=7))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('1',PolynomialFeatures(include_bias=False)),('0',ExtraTreesClassifier(criterion='entropy',max_features=0.9500000000000001,min_samples_leaf=2,min_samples_split=12))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('1',PolynomialFeatures(include_bias=False)),('0',ExtraTreesClassifier(max_features=0.8,min_samples_leaf=8,min_samples_split=15))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('1',PolynomialFeatures(include_bias=False)),('0',ExtraTreesClassifier(criterion='entropy',max_features=0.9500000000000001,min_samples_leaf=11,min_samples_split=9))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('1',PolynomialFeatures(include_bias=False)),('0',ExtraTreesClassifier(criterion='entropy',max_features=0.4,min_samples_leaf=2,min_samples_split=6))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('0',ExtraTreesClassifier(bootstrap=True,criterion='entropy',max_features=0.8500000000000001,min_samples_leaf=2,min_samples_split=4))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('1',PolynomialFeatures(include_bias=False)),('0',ExtraTreesClassifier(max_features=0.8500000000000001,min_samples_leaf=2,min_samples_split=17))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('2',MaxAbsScaler()),('1',MaxAbsScaler()),('0',ExtraTreesClassifier(criterion='entropy',max_features=0.55,min_samples_split=11))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('1',MaxAbsScaler()),('0',ExtraTreesClassifier(criterion='entropy',max_features=0.55,min_samples_split=11))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('2',MinMaxScaler()),('1',PolynomialFeatures(include_bias=False)),('0',RandomForestClassifier(bootstrap=False,criterion='entropy',max_features=0.2,min_samples_leaf=8,min_samples_split=7))])"
+]
