@@ -137,3 +137,4 @@ hpc_files/
 hpc_output/
 *.png
 *.pdf
+results/

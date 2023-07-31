@@ -19,13 +19,34 @@ TASKS = ["bin", "multi", "regr"]
 
 kkmeans_n_clusters = [3, 5, 8]
 portfolio_sizes = [4, 8, 16]
+optics_kwargs = {
+    "bin": {
+        "eps": 0.5,
+        "min_samples": 10,
+        "metric": "euclidean",
+        "n_jobs": -1,
+    },
+    "multi": {
+        "eps": 0.5,
+        "min_samples": 5,
+        "xi": 0.001,
+        "metric": "euclidean",
+        "n_jobs": -1,
+    },
+    "regr": {
+        "eps": 0.5,
+        "min_samples": 10,
+        "metric": "euclidean",
+        "n_jobs": -1,
+    }
+}
 
 class PortfolioTransformer(BaseEstimator, TransformerMixin):
     def __init__(
         self, 
         clustering_algorithm: ClusterMixin, 
         portfolios: dict[str, list[Pipeline]]
-    ) -> None:
+    ):
 
         self.clustering_algorithm = clustering_algorithm
         self.portfolios = portfolios
@@ -36,7 +57,6 @@ class PortfolioTransformer(BaseEstimator, TransformerMixin):
     
     def transform(self, X, y = None):
         label = self.clustering_algorithm.predict(X)
-        print(label)
         portfolio = self.portfolios[str(label[0])]
         return portfolio
 
@@ -116,13 +136,11 @@ def save_pipeline(
         path = Path(__file__).parent.parent / "inference_pipelines" / str(task) / f"inference_pipeline_{task}_{path_ending}_psize_{portfolio_size}"
 
     sio.dump(pipeline, path)
-    # pickle.dump(pipeline, open(path, "wb"))
 
 def create_inference_pipeline(
     preprocessor: ColumnTransformer,
     task: str,
     clustering_algorithm: ClusterMixin,
-    path = None,
 ) -> Pipeline:
 
     if task not in TASKS:
@@ -149,7 +167,8 @@ def build_portfolios(
     labels: list[int],
     performance_matrix: pd.DataFrame,
     portfolio_size: int,
-    static: bool = False
+    static: bool = False,
+    ascending: str = False
 ) -> dict[str, list[Pipeline]]:
     if static:
         return list(
@@ -164,7 +183,7 @@ def build_portfolios(
         portfolios[str(label)] = list(
             performance_matrix.loc[performance_matrix.index[label_ind]]
             .mean(axis = 0)
-            .sort_values(ascending = False)
+            .sort_values(ascending = ascending)
             [:portfolio_size].index
         )
     return portfolios
@@ -203,6 +222,7 @@ def main() -> None:
     argparser.add_argument("include_static", type = bool, nargs = '?', default = False)
     args = argparser.parse_args()
     task = args.task
+    ascending = False if task ==  "bin" else True
 
     metafeature_dataframe = get_metafeature_dataframe(task)
     metafeature_dataframe = metafeature_dataframe.applymap(lambda x: np.nan if x == np.inf else x)
@@ -212,7 +232,8 @@ def main() -> None:
         "median_sd", "min_mean", "min_sd", "sd_mean", "sd_sd", "variance_mean", "variance_sd", "eq_num_attr"
         ]
     numerical_features_norm = list(set(metafeature_dataframe.columns) - set(numerical_features_with_outliers))
-
+    if task == "regr":
+        numerical_features_with_outliers.remove("eq_num_attr")
     transformer = create_transformer(metafeature_dataframe, numerical_features_norm, numerical_features_with_outliers)
     transformed_metafeatures = transformer.transform(metafeature_dataframe)
 
@@ -221,23 +242,29 @@ def main() -> None:
     #Static
     if args.include_static:
         for portfolio_size in portfolio_sizes:
-            portfolios = build_portfolios(labels = None, performance_matrix=performance_matrix, portfolio_size=portfolio_size, static=True)
+            portfolios = build_portfolios(labels = None, performance_matrix=performance_matrix, portfolio_size=portfolio_size, static=True, ascending=ascending)
             save_portfolios(portfolios, portfolio_size, clustering_algorithm=None, task=str(task))
         return
 
     #Kernel K-Means
     for cluster_size in kkmeans_n_clusters:
-        clustering_algorithm = KernelKMeans(n_clusters = cluster_size, random_state = 42, kernel = "rbf", gamma = 1)
+        gamma = 1 if task in ["bin", "multi"] else 0.5
+        clustering_algorithm = KernelKMeans(n_clusters = cluster_size, random_state = 42, kernel = "rbf", gamma = 0.5)
         fitted_cluster = fit_clustering(transformed_metafeatures, clustering_algorithm)
         for portfolio_size in portfolio_sizes:
-            portfolios = build_portfolios(fitted_cluster.labels_, performance_matrix, portfolio_size)
+            portfolios = build_portfolios(fitted_cluster.labels_, performance_matrix, portfolio_size, ascending=ascending)
             portfoliotransformer = PortfolioTransformer(fitted_cluster, portfolios)
             inference_pipeline = create_inference_pipeline(transformer, str(task), portfoliotransformer)
             save_pipeline(inference_pipeline, str(task), portfoliotransformer.clustering_algorithm, portfolio_size)
 
     #OPTICS
-    clustering_algorithm = MetaOPTICS(mf_dataframe = transformed_metafeatures, eps = 0.5, min_samples = 10, metric = "euclidean", n_jobs = -1)
+    clustering_algorithm = MetaOPTICS(mf_dataframe = transformed_metafeatures, **optics_kwargs[str(task)])
     fitted_cluster = fit_clustering(transformed_metafeatures, clustering_algorithm)
+    #Set a threshold for the reachability distance, used to enable prediction
+    #This is a workaround, since the reachability distance is not set by default
+    #No clear way to correctly predict using OPTICS
+    fitted_cluster.set_threshold()
+
     for portfolio_size in portfolio_sizes:
         portfolios = build_portfolios(fitted_cluster.labels_, performance_matrix, portfolio_size)
         portfoliotransformer = PortfolioTransformer(fitted_cluster, portfolios)

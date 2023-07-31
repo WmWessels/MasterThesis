@@ -97,8 +97,8 @@
     "worst_node_mean": 0, 
     "linear_discr_mean": 0, 
     "nr_class": 0,
-    "class_freq_mean": 0,
-    "class_freq_sd": 0
+    "majority_class_size": 0,
+    "minority_class_size": 0
 },
 
 "meta_features_regr": {

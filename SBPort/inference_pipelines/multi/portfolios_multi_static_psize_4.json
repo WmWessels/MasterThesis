@@ -1,0 +1,6 @@
+[
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('1',FeatureAgglomeration(affinity='euclidean',linkage='complete')),('0',GradientBoostingClassifier(learning_rate=0.5,max_depth=5,max_features=0.2,min_samples_leaf=10,min_samples_split=10,subsample=0.2))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('2',FeatureAgglomeration(affinity='l1',linkage='complete')),('1',SelectFwe(alpha=0.017)),('0',GradientBoostingClassifier(learning_rate=0.5,max_depth=5,max_features=0.2,min_samples_leaf=13,min_samples_split=6,subsample=0.2))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('2',VarianceThreshold(threshold=0.5)),('1',FeatureAgglomeration(affinity='euclidean',linkage='complete')),('0',GradientBoostingClassifier(learning_rate=0.5,max_depth=5,max_features=0.2,min_samples_leaf=13,min_samples_split=10,subsample=0.2))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('1',FeatureAgglomeration(affinity='manhattan',linkage='complete')),('0',GradientBoostingClassifier(learning_rate=0.5,max_depth=5,max_features=0.2,min_samples_leaf=13,min_samples_split=6,subsample=0.2))])"
+]

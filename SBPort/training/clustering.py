@@ -120,17 +120,20 @@ class KernelKMeans(BaseEstimator, ClusterMixin):
 
 class MetaOPTICS(OPTICS):
     
-    def __init__(self, mf_dataframe: pd.DataFrame, eps, min_samples, metric, n_jobs):
-        super().__init__(eps = eps, min_samples = min_samples, metric = metric, n_jobs = n_jobs)
+    def __init__(self, mf_dataframe: pd.DataFrame, eps = None, min_samples = 5, metric = "euclidean", n_jobs = None, xi = 0.01):
+        super().__init__(eps = eps, min_samples = min_samples, metric = metric, n_jobs = n_jobs, xi = xi)
         self.mf_dataframe = mf_dataframe
+
+    def set_threshold(self):
+        mask = np.where(self.labels_ != -1)
+        self.threshold_ = self.reachability_[mask][1:].max()
     
     def predict(self, new_data_point: pd.DataFrame, y = None):
-        threshold = 0.8
         distances = np.linalg.norm(self.mf_dataframe - new_data_point[0], axis=1)
         #smaller than threshold
-        mask = np.where(distances < threshold)
+        mask = np.where(distances < self.threshold_)
         if len(mask[0]) == 0:
-            return -1
+            return [-1]
         index_to_select = np.argmin(distances[mask])
         return [self.labels_[index_to_select]]
 

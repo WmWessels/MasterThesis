@@ -1,0 +1,10 @@
+[
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('2',PolynomialFeatures(include_bias=False)),('1',FastICA(tol=0.1,whiten='unit-variance')),('0',LinearSVR(C=5.0,dual=False,epsilon=0.0001,loss='squared_epsilon_insensitive'))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('1',VarianceThreshold(threshold=0.5)),('0',LinearSVR(C=0.1,epsilon=0.001,loss='squared_epsilon_insensitive',tol=0.1))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('2',Binarizer(threshold=0.55)),('1',Nystroem(gamma=0.25,kernel='polynomial',n_components=5)),('0',LinearSVR(C=10.0,epsilon=0.0001,loss='squared_epsilon_insensitive',tol=0.01))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('2',Binarizer(threshold=0.55)),('1',PolynomialFeatures(include_bias=False)),('0',LinearSVR(C=10.0,epsilon=0.0001,tol=0.001))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('2',Binarizer(threshold=0.55)),('1',PolynomialFeatures(include_bias=False)),('0',LinearSVR(C=15.0,epsilon=0.0001,tol=0.01))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('2',Binarizer(threshold=0.7000000000000001)),('1',MinMaxScaler()),('0',AdaBoostRegressor(learning_rate=0.1,loss='exponential',n_estimators=100))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('2',PolynomialFeatures(include_bias=False)),('1',FeatureAgglomeration(affinity='euclidean',linkage='complete')),('0',ElasticNetCV(l1_ratio=0.45))])",
+    "Pipeline(steps=[('imputation',SimpleImputer(strategy='median')),('1',Nystroem(gamma=0.9,kernel='linear',n_components=5)),('0',LinearSVR(C=0.001,dual=False,epsilon=0.001,loss='squared_epsilon_insensitive',tol=0.01))])"
+]

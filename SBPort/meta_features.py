@@ -1,4 +1,5 @@
-import concurrent.futures
+import time
+import logging
 import numpy as np
 import pandas as pd
 import scipy
@@ -107,16 +108,7 @@ class MetaFeatures:
                 """
             )
 
-        # with concurrent.futures.ProcessPoolExecutor(self._njobs) as executor:
-        #     futures = [executor.submit(calculate_feature) for calculate_feature in self._retrieval_funcs]
-        #     for future in concurrent.futures.as_completed(futures):
-        #         try:
-        #             result = future.result()
-        #             if result is not None:
-        #                 self.meta_features.update(result)
-        #         except concurrent.futures.process.BrokenProcessPool:
-        #             print(future)
-        #             continue
+        begin_time = time.time()
         results = Parallel(n_jobs = self._njobs)(delayed(calculate_feature)() for calculate_feature in self._retrieval_funcs)
                 # result = future.result()
         for result in results:
@@ -125,6 +117,9 @@ class MetaFeatures:
         #assert that all meta featurse have a value
         for key in self.meta_features.keys():
             assert self.meta_features[key] is not None, f"Missing value for {key}"
+        
+        ending_time = time.time()
+        logging.info(f"Calculated metafeatures in {ending_time - begin_time} seconds")
 
         return self.meta_features
     
@@ -345,6 +340,8 @@ class MetaFeatures:
                 for ind_attr_a, ind_attr_b in col_permutations
             ]
         )
+        if not attr_conc:
+            return
 
         return {"attr_conc_mean": np.nanmean(attr_conc), "attr_conc_sd": np.nanstd(attr_conc)}
     
@@ -358,9 +355,6 @@ class ClassificationMetaFeatures(MetaFeatures):
 
     def fit(self):
         self._retrieval_funcs = class_methods(self)
-
-    # def _nr_class(self):
-    #     return {"nr_class": len(np.unique(self.y))}
 
     def _class_ftrs(self):
         labels, counts = np.unique(self.y, return_counts=True)
@@ -685,7 +679,6 @@ def run(
     
     mf_extractor.fit()
     mf = mf_extractor.retrieve()
-    print(mf)
 
     return mf
         
@@ -702,7 +695,6 @@ def run_batch(
     for dataset_id in dataset_ids:
         metafeatures = run(dataset_id, extractor, **kwargs)
         metafeatures_list.append(metafeatures)
-        print(dataset_id, "finished")
 
     metafeatures_dataframe = pd.DataFrame(metafeatures_list, index = dataset_ids)
     if save:
