@@ -1,8 +1,3 @@
-"""Kernel K-means"""
-
-# Author: Mathieu Blondel <mathieu@mblondel.org>
-# License: BSD 3 clause
-
 import numpy as np
 import pandas as pd
 
@@ -11,8 +6,6 @@ from sklearn.metrics.pairwise import pairwise_kernels
 from sklearn.utils import check_random_state
 
 from sklearn.cluster import OPTICS
-from scipy.spatial.distance import cdist
-
 
 class KernelKMeans(BaseEstimator, ClusterMixin):
     """

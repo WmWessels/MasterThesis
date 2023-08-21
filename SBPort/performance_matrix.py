@@ -1,9 +1,6 @@
-from sklearnex import patch_sklearn
-patch_sklearn()
+from sklearn.model_selection import cross_validate
 
-from sklearn.model_selection import cross_val_score, cross_validate
-
-from typing import List, Iterator, Tuple, Optional
+from typing import List, Optional
 import openml
 import pandas as pd
 import signal

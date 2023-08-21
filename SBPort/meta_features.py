@@ -22,7 +22,7 @@ from sklearn.metrics import accuracy_score, r2_score
 
 from utils import impute, handling_error
 
-N_JOBS = multiprocessing.cpu_count()
+N_JOBS = multiprocessing.cpu_count() // 2
 
 bin_kwargs = {
     "is_clf": True,
@@ -53,8 +53,7 @@ class MetaFeatures:
              is_clf: bool,
              is_binary: bool,
              n_jobs: Optional[int] = None,
-             categorical_indicator: Optional[list] = None,
-             training = False
+             categorical_indicator: Optional[list] = None
         ):
         if type(X) == pd.DataFrame:
             self.dataframe = X
@@ -84,7 +83,6 @@ class MetaFeatures:
 
         self.meta_features = {feature: np.nan for feature,_ in self.meta_features.items()}
         
-        
         self.__post_init__()
         
     def __post_init__(self):
@@ -110,13 +108,9 @@ class MetaFeatures:
 
         begin_time = time.time()
         results = Parallel(n_jobs = self._njobs)(delayed(calculate_feature)() for calculate_feature in self._retrieval_funcs)
-                # result = future.result()
         for result in results:
             if result is not None:
                 self.meta_features.update(result)
-        #assert that all meta featurse have a value
-        for key in self.meta_features.keys():
-            assert self.meta_features[key] is not None, f"Missing value for {key}"
         
         ending_time = time.time()
         logging.info(f"Calculated metafeatures in {ending_time - begin_time} seconds")

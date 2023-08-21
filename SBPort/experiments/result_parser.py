@@ -2,23 +2,27 @@ import numpy as np
 from pathlib import Path
 from typing import Optional
 import argparse
-from sklearn.preprocessing import RobustScaler, MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler
 
 np.set_printoptions(suppress=True)
 
 def calculate_heuristic_policy_value(
     results: list,
-    scale: bool = False
+    scale: bool = False,
+    inverse = False
 ):
     amount_missing = np.sum(np.isnan(results))/len(results)
+
     if scale:
 
         best_result = np.nanmax(results)
         distances_to_best = np.subtract(best_result, results)
         distances_to_best = np.abs(distances_to_best)
-        # min max scaler scales from 0 to 1, so we need to subtract from 1, as our best result is 0
-        results = np.subtract(1, MinMaxScaler().fit_transform(distances_to_best.reshape(-1, 1)))
-
+        # min max scaler scales from 0 to 1, so we need to subtract from 1, as our best result is 0 for log loss and rmse
+        if inverse:
+            results = np.subtract(1, MinMaxScaler().fit_transform(distances_to_best.reshape(-1, 1)))
+        else:
+            results = MinMaxScaler().fit_transform(distances_to_best.reshape(-1, 1))
         return np.around((np.array(np.nanmean(results)) + amount_missing)/2, 3)
     return np.around((np.nanmean(results) + (1 - amount_missing))/2, 3)
 
@@ -45,7 +49,8 @@ def parse_portfolio_results_max(
 def parse_portfolio_results_heuristic(
     path: Path,
     portfolio_size: Optional[int] = None,
-    scale: bool = False
+    scale: bool = False,
+    inverse: bool = False
 ):
     with open(path, "r") as f:
         data = f.readlines()
@@ -60,8 +65,8 @@ def parse_portfolio_results_heuristic(
     lines = np.where(lines == 0.5, np.nan, lines)
     np.around(lines, decimals = 3, out = lines)
     if not portfolio_size:
-        return np.array([calculate_heuristic_policy_value(result, scale = scale) for result in lines])
-    return np.array([calculate_heuristic_policy_value(result, scale = scale) for result in lines[:, :portfolio_size]])
+        return np.array([calculate_heuristic_policy_value(result, scale = scale, inverse = inverse) for result in lines])
+    return np.array([calculate_heuristic_policy_value(result, scale = scale, inverse = inverse) for result in lines[:, :portfolio_size]])
 
 
 def parse_clustervsall_results(
@@ -135,7 +140,11 @@ if __name__ == "__main__":
     print("MAX POLICY")
     print("one_nn, static, optimal")
     print(np.array([results_one_nn, results_static, results_opt]).T)
-    if task in ["multi", "regr"]:
+    if task == "multi":
+        results_one_nn = parse_portfolio_results_heuristic(Path(__file__).parent.parent / "results" / "one_nn" / f"one_nn_{task}.out", scale = True, inverse = True)
+        results_static = parse_portfolio_results_heuristic(Path(__file__).parent.parent / "results" / "static" / f"static_{task}.out", scale = True, inverse = True)
+        results_opt = parse_portfolio_results_heuristic(Path(__file__).parent.parent / "results" / "optimal" / f"optimal_{task}_heur.out", scale = True, inverse = True)
+    elif task == "regr":
         results_one_nn = parse_portfolio_results_heuristic(Path(__file__).parent.parent / "results" / "one_nn" / f"one_nn_{task}.out", scale = True)
         results_static = parse_portfolio_results_heuristic(Path(__file__).parent.parent / "results" / "static" / f"static_{task}.out", scale = True)
         results_opt = parse_portfolio_results_heuristic(Path(__file__).parent.parent / "results" / "optimal" / f"optimal_{task}_heur.out", scale = True)

@@ -1,48 +1,18 @@
-from meta_features import ClassificationMetaFeatures, MetaFeatures
-from training.fit_inference_pipeline import PortfolioTransformer
-import skops.io as sio
+import signal
+import logging
+import time
+from typing import Callable
+from pathlib import Path
 
 import pandas as pd
 import numpy as np
 
 from sklearn.pipeline import Pipeline
 from sklearn.metrics._scorer import _ProbaScorer
-import logging
-import time
+
 from sklearn.model_selection import cross_val_score
-from enum import Enum
-from typing import Callable
-from utils import prepare_openml_for_inf
-from pathlib import Path
-
-import openml
-import json
-# from sklearnex import patch_sklearn
-# patch_sklearn()
-
-from sklearn.model_selection import cross_val_score, cross_validate
-
-from typing import List, Iterator, Tuple, Optional
-import openml
-import pandas as pd
-import signal
-
-import os
-import random
-import multiprocessing  
-import functools
-import time
-import logging
-
-from pathlib import Path
-
-from gama.utilities.preprocessing import select_categorical_columns, basic_encoding
-
-import numpy as np
 from sklearn.base import TransformerMixin
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import train_test_split, StratifiedKFold
-from sklearn.metrics import accuracy_score, log_loss, make_scorer, roc_auc_score
 import category_encoders as ce
 
 from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB
@@ -93,7 +63,6 @@ from sklearn.feature_selection import (
     f_regression,
 )
 
-
 from sklearn.linear_model import ElasticNetCV, LassoLarsCV
 from sklearn.ensemble import (
     ExtraTreesRegressor,
@@ -106,21 +75,11 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.svm import LinearSVR
 from sklearn.impute import SimpleImputer
 
-from sklearn.impute import SimpleImputer
-import json
-import time
-
-from meta_features import ClassificationMetaFeatures
 import skops.io as sio
-from training.fit_inference_pipeline import PortfolioTransformer
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import train_test_split
-from functools import lru_cache
 
-class Task(Enum):
-    BINARY = "bin"
-    REGRESSION = "regr"
-    MULTI = "multi"
+from meta_features import MetaFeatures
+from training.fit_inference_pipeline import PortfolioTransformer
+from utils import prepare_openml_for_inf
 
 def timeout_handler(signum, frame):
     raise TimeoutError("Cross validation procedure for this Pipeline took more than 900 seconds, terminating it.")
@@ -155,6 +114,10 @@ class SBPort:
         inference_pipeline: Pipeline,
         metafeatures: pd.DataFrame
     ) -> list[Pipeline]:
+        """
+        Pipelines are stored as strings. This function evaluates them and returns a list of executable sklearn pipelines.
+        """
+
         return [eval(pipeline) for pipeline in inference_pipeline.transform(metafeatures)]
 
     @staticmethod
@@ -172,6 +135,9 @@ class SBPort:
         pipelines: list[str],
         scoring: str | Callable[..., float]
     ) ->  list[float]:
+        """
+        Function to evaluate a batch of sklearn pipelines
+        """
 
         scores = []
         logging.info("Starting portfolio evaluation procedure")
@@ -208,7 +174,10 @@ class SBPort:
         inference_pipeline_path: Path,
         scoring: str | Callable[..., float],
         **fit_kwargs
-    ) -> dict[str, list[float]]:
+    ) -> list[float]:
+        """
+        Runs the whole inference pipeline on a new data set and performs detached portfolio evaluation.
+        """
         X, y, categorical_indicator = prepare_openml_for_inf(dataset_id)
         metafeatures = self.calculate_metafeatures(
             X, 
