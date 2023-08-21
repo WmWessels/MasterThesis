@@ -198,13 +198,13 @@ class InferencePipeline:
     
     def create_inference_pipeline(
         self,
-        preprocessor: ColumnTransformer,
+        column_transformer: ColumnTransformer,
         clustering_algorithm: ClusterMixin,
     ) -> Pipeline:
 
         pipeline = Pipeline(
             steps=[
-                ("preprocessor", preprocessor),
+                ("preprocessor", column_transformer),
                 ("cluster", clustering_algorithm)
             ]
         )
@@ -257,27 +257,26 @@ class InferencePipeline:
             clustering_algorithm = KernelKMeans(n_clusters = cluster_size, random_state = 42, kernel = "rbf", gamma = gamma)
             fitted_cluster = clustering_algorithm.fit(self._preprocessed_metafeatures)
 
-        for portfolio_size in PORTFOLIO_SIZES:
-            portfolios = self.construct_portfolio(
-                labels = fitted_cluster.labels_, 
-                performance_matrix = self._performance_matrix, 
-                portfolio_size = portfolio_size, 
-                ascending = self._ascending
-            )
+            for portfolio_size in PORTFOLIO_SIZES:
+                portfolios = self.construct_portfolio(
+                    labels = fitted_cluster.labels_, 
+                    performance_matrix = self._performance_matrix, 
+                    portfolio_size = portfolio_size, 
+                    ascending = self._ascending
+                )
 
-            portfoliotransformer = PortfolioTransformer(fitted_cluster, portfolios)
-            inference_pipeline = self.create_inference_pipeline(
-                column_transformer = self._column_transformer, 
-                task = self.task, 
-                portfolio_transformer = portfoliotransformer
-            )
+                portfoliotransformer = PortfolioTransformer(fitted_cluster, portfolios)
+                inference_pipeline = self.create_inference_pipeline(
+                    column_transformer = self._column_transformer, 
+                    clustering_algorithm = portfoliotransformer
+                )
 
-            self.save_pipeline(
-                inference_pipeline = inference_pipeline, 
-                task = self.task, 
-                clustering_algorithm = portfoliotransformer.clustering_algorithm, 
-                portfolio_size = portfolio_size
-            )
+                self.save_pipeline(
+                    pipeline = inference_pipeline, 
+                    task = self.task, 
+                    clustering_algorithm = portfoliotransformer.clustering_algorithm, 
+                    portfolio_size = portfolio_size
+                )
         
     def construct_optics_pipelines(
         self
@@ -295,16 +294,17 @@ class InferencePipeline:
                 performance_matrix = self._performance_matrix, 
                 portfolio_size = portfolio_size
             )
+
             portfoliotransformer = PortfolioTransformer(fitted_cluster, portfolios)
             inference_pipeline = self.create_inference_pipeline(
                 column_transformer = self._column_transformer,
-                task = self.task, 
-                portfolio_transformer = portfoliotransformer
+                clustering_algorithm = portfoliotransformer
             )
+
             self.save_pipeline(
-                inference_pipeline = inference_pipeline, 
+                pipeline = inference_pipeline, 
                 task = self.task, 
-                portfolio_transformer = portfoliotransformer.clustering_algorithm, 
+                clustering_algorithm = portfoliotransformer.clustering_algorithm, 
                 portfolio_size = portfolio_size
             )
     
