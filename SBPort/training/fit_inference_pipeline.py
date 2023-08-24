@@ -14,7 +14,13 @@ from sklearn.cluster import OPTICS
 from sklearn.base import BaseEstimator, TransformerMixin
 from clustering import KernelKMeans, MetaOPTICS
 
-from candidate_generation import Task
+# from candidate_generation import Task
+from enum import Enum
+
+class Task(Enum):
+    BIN = "bin"
+    MULTI = "multi"
+    REGR = "regr"
 
 N_CLUSTERS = [3, 5, 8]
 PORTFOLIO_SIZES = [4, 8, 16]
