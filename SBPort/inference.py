@@ -77,9 +77,9 @@ from sklearn.impute import SimpleImputer
 
 import skops.io as sio
 
-from meta_features import MetaFeatures
-from training.fit_inference_pipeline import PortfolioTransformer
-from utils import prepare_openml_for_inf
+from .meta_features import MetaFeatures
+from .training.fit_inference_pipeline import PortfolioTransformer
+from .utils import prepare_openml_for_inf
 
 def timeout_handler(signum, frame):
     raise TimeoutError("Cross validation procedure for this Pipeline took more than 900 seconds, terminating it.")
