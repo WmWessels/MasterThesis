@@ -1,6 +1,6 @@
 # MasterThesis
 
-SBPort is a Python framework for warm-starting AutoML systems. Additionally SBPort, can be used for detached portfolio evaluation for a given dataset. 
+SBPort is a master thesis technique for warm-starting AutoML systems. Additionally SBPort can be used for detached portfolio evaluation on a given dataset. 
 
 Inference includes the following steps:
 - Calculate meta-features
