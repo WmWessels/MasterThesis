@@ -71,7 +71,7 @@ class MetaFeatures:
         self.is_binary = is_binary
         self.categorical_indicator = categorical_indicator
 
-        with open("_features.json", "r") as f:
+        with open(Path(__file__).parent / "_features.json", "r") as f:
             meta_features = json.load(f)
         
         if not self.is_clf:
