@@ -1,5 +1,5 @@
 import openml
-from meta_features import MetaFeatures, ClassificationMetaFeatures, RegressionMetaFeatures
+from .meta_features import MetaFeatures, ClassificationMetaFeatures, RegressionMetaFeatures
 from sklearn.metrics import log_loss, make_scorer, mean_squared_error
 from sklearn.model_selection import train_test_split
 
