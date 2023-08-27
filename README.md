@@ -1,4 +1,4 @@
-# MasterThesis
+# A Similarity-Based Meta-Learning Approach to Building Pipeline Portfolios for Automated Machine Learning
 
 SBPort is a master thesis technique for warm-starting AutoML systems. Additionally SBPort can be used for detached portfolio evaluation on a given dataset. 
 
