@@ -20,7 +20,7 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import accuracy_score, r2_score
 
-from utils import impute, handling_error
+from .utils import impute, handling_error
 
 N_JOBS = multiprocessing.cpu_count() // 2
 
