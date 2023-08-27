@@ -206,6 +206,16 @@ def save_portfolios(
             f, 
             indent = 4
         )
+    
+class InferencePipeline:
+
+    def __init__(self, task: Task, portfolio_size: int, clustering_algorithm: ClusterMixin, static: bool = False):
+        self.task = task
+        self.portfolio_size = portfolio_size
+        self.clustering_algorithm = clustering_algorithm
+        self.static = static
+        self.pipeline = None
+        self.portfolios = None
 
 def main() -> None:
     argparser = argparse.ArgumentParser()

@@ -113,7 +113,8 @@ class ExperimentRunner:
         self.extractor = kwargs["extractor"]
         self.numerical_features_with_outliers = kwargs["numerical_features_with_outliers"]
         self.scoring = kwargs["scoring"]
-        self.fit_kwargs = kwargs["fit_kwargs"]
+        self.is_clf = kwargs["is_clf"]
+        self.is_binary = kwargs["is_binary"]
 
         self.result_dict = {str(dataset_id): {} for dataset_id in self._dataset_ids}
     
@@ -132,7 +133,8 @@ class ExperimentRunner:
                 numerical_features_with_outliers = self.numerical_features_with_outliers,
                 inference_pipeline_path = path,
                 scoring = self.scoring,
-                **self.fit_kwargs
+                is_clf = self.is_clf,
+                is_binary = self.is_binary,
             )
             logging.info(f"result on {dataset_id}: {result}")
             self.result_dict[str(dataset_id)] = result
@@ -150,7 +152,8 @@ class ExperimentRunner:
                     numerical_features_with_outliers = self.numerical_features_with_outliers,
                     inference_pipeline_path = inference_pipeline_path,
                     scoring = self.scoring,
-                    **self.fit_kwargs
+                    is_clf = self.is_clf,
+                    is_binary = self.is_binary,
                 )
                 logging.info(f"result on {cluster_size}: {result}")
                 self.result_dict[str(dataset_id)][str(cluster_size)] = result
@@ -162,7 +165,8 @@ class ExperimentRunner:
                 numerical_features_with_outliers = self.numerical_features_with_outliers,
                 inference_pipeline_path = inference_pipeline_path_optics,
                 scoring = self.scoring,
-                **self.fit_kwargs
+                is_clf = self.is_clf,
+                is_binary = self.is_binary,
             )
             self.result_dict[str(dataset_id)]["optics"] = result_optics
             logging.info(f"result on optics: {result_optics}")
@@ -193,7 +197,7 @@ class ExperimentRunner:
         kwargs = inference_kwargs[f"{self._task}_kwargs"]
         extractor = kwargs["extractor"]
         numerical_features_with_outliers = kwargs["numerical_features_with_outliers"]
-        fit_kwargs = kwargs["fit_kwargs"]
+        # fit_kwargs = kwargs["fit_kwargs"]
 
         X, y, categorical_indicator = prepare_openml_for_inf(dataset_id)
         metafeatures_df = preprocessor.transform(metafeatures_df)
@@ -203,7 +207,8 @@ class ExperimentRunner:
             extractor = extractor, 
             numerical_features_with_outliers = numerical_features_with_outliers, 
             categorical_indicator = categorical_indicator,
-            **fit_kwargs
+            is_clf = self.is_clf,
+            is_binary = self.is_binary,
             )
         metafeatures_new = preprocessor.transform(metafeatures_new)[0]
         
@@ -252,7 +257,8 @@ class ExperimentRunner:
                     extractor = self.extractor,
                     numerical_features_with_outliers = self.numerical_features_with_outliers,
                     categorical_indicator = categorical_indicator,
-                    **self.fit_kwargs
+                    is_clf = self.is_clf,
+                    is_binary = self.is_binary,
                     )
                 inference_pipeline = self.sbport.load_inference_pipeline(warm_start_path)
                 warm_start = self.sbport._transform(inference_pipeline, metafeatures)
@@ -292,7 +298,7 @@ class ExperimentRunner:
         for file in inference_pipeline_path.iterdir():
             if search_pattern in file.name:
                 path = inference_pipeline_path / file.name
-        results = {dataset_id: {} for dataset_id in self._dataset_ids}
+
         for dataset_id in self._dataset_ids:
             X, y, categorical_indicator = prepare_openml_for_inf(dataset_id)
             metafeatures = self.sbport.calculate_metafeatures(
@@ -301,7 +307,8 @@ class ExperimentRunner:
                     extractor = self.extractor,
                     numerical_features_with_outliers = self.numerical_features_with_outliers,
                     categorical_indicator = categorical_indicator,
-                    **self.fit_kwargs
+                    is_clf = self.is_clf,
+                    is_binary = self.is_binary,
                     )
 
             inference_pipeline = self.sbport.load_inference_pipeline(path)

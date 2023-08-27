@@ -14,10 +14,9 @@ inference_kwargs = {
             "median_sd", "min_mean", "min_sd", "sd_mean", "sd_sd", "variance_mean", "variance_sd", "eq_num_attr"
             ],
         "scoring": "roc_auc",
-        "fit_kwargs": {
-            "is_clf": True,
-            "is_binary": True
-        }
+
+        "is_clf": True,
+        "is_binary": True
     },
     "multi_kwargs": {
         "extractor": ClassificationMetaFeatures,
@@ -26,10 +25,9 @@ inference_kwargs = {
             "median_sd", "min_mean", "min_sd", "sd_mean", "sd_sd", "variance_mean", "variance_sd", "eq_num_attr"
             ],
         "scoring": "neg_log_loss",
-        "fit_kwargs": {
-            "is_clf": True,
-            "is_binary": False
-        }
+
+        "is_clf": True,
+        "is_binary": False
     },
     "regr_kwargs": {
         "extractor": RegressionMetaFeatures,
@@ -38,10 +36,8 @@ inference_kwargs = {
             "median_sd", "min_mean", "min_sd", "sd_mean", "sd_sd", "variance_mean", "variance_sd",
             ],
         "scoring": "neg_root_mean_squared_error",
-        "fit_kwargs": {
-            "is_clf": False,
-            "is_binary": False
-        }
+        "is_clf": False,
+        "is_binary": False
     }
 }
 

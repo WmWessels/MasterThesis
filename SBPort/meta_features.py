@@ -363,7 +363,7 @@ class ClassificationMetaFeatures(MetaFeatures):
         class_conc = np.apply_along_axis(
             func1d=self.calc_conc, axis=0, arr=self.C, vec_y=self.y
         )
-        # class_conc = MFEInfoTheory.ft_class_conc(self.C, self.y)
+        
         return {"class_conc_mean": np.nanmean(class_conc), "class_conc_sd": np.nanstd(class_conc)}
     
     @handling_error
