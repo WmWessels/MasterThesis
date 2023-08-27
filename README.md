@@ -15,8 +15,9 @@ from SBPort.config import inference_kwargs
 
 if __name__=="__main__":
     sbport = SBPort()
+    dataset_id = 3
     pipeline_results = sbport.run(
-        dataset_id = 3,
+        dataset_id = dataset_id,
         inference_pipeline_path="SBPort/optimal_configurations/bin/optimal_bin_max_8_psize_16",
         **inference_kwargs["bin_kwargs"],
     )
